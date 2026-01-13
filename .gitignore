@@ -1,5 +1,4 @@
-.DS_Store
-.claude/
-.vercel/
-.idea/
-*.png
+node_modules
+.next
+out
+.env*
