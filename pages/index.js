@@ -155,6 +155,13 @@ const materialPlaceholders = {
   D: ['粘贴你收集的多个素材片段', '在这里粘贴你收集的素材片段...\n\n用 ===素材分隔=== 分隔不同的素材']
 };
 
+const materialPromptPlaceholders = {
+  A: '[把你的文章粘贴在这里]',
+  B: '[在这里输入你的主题或想法]',
+  C: '[把你的逐字稿/笔记粘贴在这里]',
+  D: '[把你收集的各种素材粘贴在这里，用 --- 分隔不同素材]'
+};
+
 function getLengthLabels(currentLength) {
   const lenReq =
     currentLength === 'auto'
@@ -521,6 +528,7 @@ export default function Home() {
   const [currentLength, setCurrentLength] = useState('medium');
 
   const [userMaterialInput, setUserMaterialInput] = useState('');
+  const [savedMaterialInput, setSavedMaterialInput] = useState('');
   const [inputText, setInputText] = useState('');
   const [fullArticleText, setFullArticleText] = useState('');
   const [customStyleInput, setCustomStyleInput] = useState('');
@@ -552,10 +560,13 @@ export default function Home() {
     return styleDescriptions[currentStyle] || '';
   }, [currentStyleTab, currentStyle, customStyleInput]);
 
-  const promptText = useMemo(
-    () => generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal }),
-    [currentMode, styleDesc, lenReq, lenLimit, lenFinal]
-  );
+  const promptText = useMemo(() => {
+    const basePrompt = generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal });
+    if (!savedMaterialInput) return basePrompt;
+    const placeholder = materialPromptPlaceholders[currentMode];
+    if (!placeholder || !basePrompt.includes(placeholder)) return basePrompt;
+    return basePrompt.replace(placeholder, savedMaterialInput);
+  }, [currentMode, styleDesc, lenReq, lenLimit, lenFinal, savedMaterialInput]);
 
   const materialInputDesc = materialPlaceholders[currentMode][0];
   const materialInputPlaceholder = materialPlaceholders[currentMode][1];
@@ -608,6 +619,21 @@ export default function Home() {
     setShowToastState(true);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setShowToastState(false), 2500);
+  };
+
+  const saveMaterialInput = () => {
+    const text = userMaterialInput.trim();
+    if (!text) {
+      showToast('⚠️ 请先填写内容再保存');
+      return;
+    }
+    setSavedMaterialInput(text);
+    showToast('✅ 已保存并同步提示词');
+  };
+
+  const clearMaterialInput = () => {
+    setUserMaterialInput('');
+    setSavedMaterialInput('');
   };
 
   const goToStep = (step) => {
@@ -999,8 +1025,14 @@ ${articleSummary}
               <div className="textarea-footer">
                 <span id="materialWordCount">{materialWordCount} 字</span>
                 <button
+                  className="btn btn-primary btn-sm"
+                  onClick={saveMaterialInput}
+                >
+                  保存
+                </button>
+                <button
                   className="btn btn-secondary btn-sm"
-                  onClick={() => setUserMaterialInput('')}
+                  onClick={clearMaterialInput}
                 >
                   清空
                 </button>

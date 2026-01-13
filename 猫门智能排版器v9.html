@@ -183,7 +183,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="step-panel" data-step="2">
 <div class="card"><div class="card-header"><div class="card-title">📋 <span id="materialInputDesc">把你已写好的文章粘贴到下方</span></div></div><div class="card-body">
 <textarea class="textarea-box" id="userMaterialInput" placeholder="在这里粘贴你已写好的完整文章..." oninput="updateMaterialWordCount()"></textarea>
-<div class="textarea-footer"><span id="materialWordCount">0 字</span><button class="btn btn-secondary btn-sm" onclick="clearMaterialInput()">清空</button></div>
+<div class="textarea-footer"><span id="materialWordCount">0 字</span><button class="btn btn-primary btn-sm" onclick="saveMaterialInput()">保存</button><button class="btn btn-secondary btn-sm" onclick="clearMaterialInput()">清空</button></div>
 </div></div>
 <div class="card"><div class="card-header"><div class="card-title">✨ AI提示词</div><button class="btn btn-sm btn-outline" onclick="copyPrompt()">📋 复制</button></div><div class="card-body">
 <div class="prompt-box"><pre id="promptText">提示词将在这里生成...</pre></div>
@@ -330,13 +330,30 @@ function updateMaterialInputDesc(){
 function updateMaterialWordCount(){
   const text=document.getElementById('userMaterialInput').value;
   document.getElementById('materialWordCount').textContent=text.replace(/\s/g,'').length+' 字';
+}
+
+function saveMaterialInput(){
+  const text=document.getElementById('userMaterialInput').value.trim();
+  if(!text){showToast('⚠️ 请先填写内容再保存');return}
+  updateMaterialWordCount();
+  generatePrompt();
+  showToast('✅ 已保存并同步提示词');
+}
+
+function clearMaterialInput(){
+  document.getElementById('userMaterialInput').value='';
+  updateMaterialWordCount();
   generatePrompt();
 }
 
-function clearMaterialInput(){document.getElementById('userMaterialInput').value='';updateMaterialWordCount()}
-
 function generatePrompt(){
   const userMaterial=document.getElementById('userMaterialInput')?.value?.trim()||'';
+  const materialPlaceholders={
+    A:'[把你的文章粘贴在这里]',
+    B:'[在这里输入你的主题或想法]',
+    C:'[把你的逐字稿/笔记粘贴在这里]',
+    D:'[把你收集的各种素材粘贴在这里，用 --- 分隔不同素材]'
+  };
   let prompt='';
   const styleDesc=currentStyleTab==='custom'?document.getElementById('customStyleInput')?.value||'专业但易读':styleDescriptions[currentStyle]||'';
   const lenReq=currentLength==='auto'?'根据主题复杂度自动决定长度':currentLength==='short'?'800-1200字':currentLength==='long'?'3000-4000字':'1500-2500字';
@@ -501,6 +518,11 @@ ${styleDesc}
 
 ---
 请直接输出原创文章，不要解释。`;
+  }
+
+  if(userMaterial){
+    const placeholder=materialPlaceholders[currentMode];
+    if(placeholder&&prompt.includes(placeholder)){prompt=prompt.replace(placeholder,userMaterial)}
   }
 
   document.getElementById('promptText').textContent=prompt;
