@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>猫门智能排版器</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+    
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif;
+      background: #f8f7f5;
+      min-height: 100vh;
+      color: #333;
+    }
+    
+    /* 顶部导航 */
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #9b8b7d 0%, #c4b5a5 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #666;
+    }
+    
+    .btn-secondary:hover {
+      background: #eee;
+    }
+    
+    .btn-primary {
+      background: #333;
+      color: #fff;
+    }
+    
+    .btn-primary:hover {
+      background: #555;
+    }
+    
+    /* 主容器 */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 24px;
+      min-height: calc(100vh - 70px);
+    }
+    
+    @media (max-width: 1000px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* 左侧编辑区 */
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .panel {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .panel-title-icon {
+      width: 24px;
+      height: 24px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    
+    /* 输入区 */
+    .input-section {
+      padding: 20px;
+    }
+    
+    .textarea-wrapper {
+      position: relative;
+    }
+    
+    .main-textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 16px;
+      border: 2px dashed #e0e0e0;
+      border-radius: 12px;
+      font-size: 15px;
+      line-height: 1.8;
+      resize: vertical;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    
+    .main-textarea:focus {
+      outline: none;
+      border-color: #9b8b7d;
+      border-style: solid;
+    }
+    
+    .main-textarea::placeholder {
+      color: #bbb;
+    }
+    
+    .input-hint {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #999;
+      line-height: 1.6;
+    }
+    
+    .input-hint code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    
+    /* 配色选择 */
+    .scheme-section {
+      padding: 16px 20px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .scheme-label {
+      font-size: 14px;
+      color: #666;
+      white-space: nowrap;
+    }
+    
+    .scheme-options {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .scheme-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .scheme-btn:hover {
+      transform: scale(1.1);
+    }
+    
+    .scheme-btn.active {
+      border-color: #333;
+    }
+    
+    /* 操作按钮 */
+    .action-section {
+      padding: 16px 20px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn-parse {
+      flex: 1;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, #9b8b7d 0%, #b8a898 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    
+    .btn-parse:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(155, 139, 125, 0.3);
+    }
+    
+    .btn-add-image {
+      padding: 14px 20px;
+      background: #f8f8f8;
+      color: #666;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .btn-add-image:hover {
+      background: #f0f0f0;
+    }
+    
+    /* 模块编辑区 */
+    .blocks-container {
+      padding: 20px;
+      min-height: 300px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #bbb;
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .empty-state-text {
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    
+    /* 单个模块 */
+    .block-item {
+      background: #fafafa;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    
+    .block-item:hover {
+      border-color: #e0e0e0;
+    }
+    
+    .block-item.editing {
+      border-color: #9b8b7d;
+      box-shadow: 0 2px 8px rgba(155, 139, 125, 0.15);
+    }
+    
+    .block-header {
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f5f5f5;
+      cursor: move;
+    }
+    
+    .block-type {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .block-type-badge {
+      padding: 4px 10px;
+      background: #fff;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .block-type-select {
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 12px;
+      background: #fff;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    
+    .block-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .block-action-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #999;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .block-action-btn:hover {
+      background: #e8e8e8;
+      color: #666;
+    }
+    
+    .block-action-btn.delete:hover {
+      background: #ffe5e5;
+      color: #e74c3c;
+    }
+    
+    .block-content {
+      padding: 16px;
+    }
+    
+    .block-textarea {
+      width: 100%;
+      min-height: 60px;
+      padding: 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.8;
+      resize: vertical;
+      font-family: inherit;
+      background: #fff;
+    }
+    
+    .block-textarea:focus {
+      outline: none;
+      border-color: #9b8b7d;
+    }
+    
+    /* 图片模块 */
+    .block-image-wrapper {
+      text-align: center;
+    }
+    
+    .block-image {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .image-url-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    
+    .image-url-input:focus {
+      outline: none;
+      border-color: #9b8b7d;
+    }
+    
+    .image-upload-area {
+      padding: 30px;
+      border: 2px dashed #ddd;
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .image-upload-area:hover {
+      border-color: #9b8b7d;
+      background: #faf9f7;
+    }
+    
+    .image-upload-area input {
+      display: none;
+    }
+    
+    .image-upload-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .image-upload-text {
+      font-size: 14px;
+      color: #999;
+    }
+    
+    /* 右侧预览区 */
+    .preview-panel {
+      position: sticky;
+      top: 94px;
+      height: fit-content;
+      max-height: calc(100vh - 118px);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .preview-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: #fff;
+      border-radius: 16px 16px 0 0;
+    }
+    
+    .preview-content {
+      max-width: 100%;
+    }
+    
+    .preview-footer {
+      padding: 16px 20px;
+      background: #fff;
+      border-top: 1px solid #f0f0f0;
+      border-radius: 0 0 16px 16px;
+      display: flex;
+      gap: 12px;
+    }
+    
+    .preview-footer .btn {
+      flex: 1;
+    }
+    
+    /* 模态框 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s;
+    }
+    
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+    
+    .modal-overlay.show .modal {
+      transform: scale(1);
+    }
+    
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #f5f5f5;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      color: #999;
+    }
+    
+    .modal-close:hover {
+      background: #eee;
+      color: #666;
+    }
+    
+    .modal-body {
+      padding: 24px;
+    }
+    
+    .modal-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 16px;
+    }
+    
+    .modal-input:focus {
+      outline: none;
+      border-color: #9b8b7d;
+    }
+    
+    .modal-divider {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      margin: 20px 0;
+      position: relative;
+    }
+    
+    .modal-divider::before,
+    .modal-divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: #eee;
+    }
+    
+    .modal-divider::before { left: 0; }
+    .modal-divider::after { right: 0; }
+    
+    .modal-upload-area {
+      padding: 40px;
+      border: 2px dashed #ddd;
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-upload-area:hover {
+      border-color: #9b8b7d;
+      background: #faf9f7;
+    }
+    
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #333;
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 1001;
+    }
+    
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    
+    /* 拖拽样式 */
+    .block-item.dragging {
+      opacity: 0.5;
+    }
+    
+    .block-item.drag-over {
+      border-top: 2px solid #9b8b7d;
+    }
+    
+    /* 添加模块按钮 */
+    .add-block-btn {
+      width: 100%;
+      padding: 16px;
+      border: 2px dashed #e0e0e0;
+      border-radius: 12px;
+      background: transparent;
+      color: #999;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .add-block-btn:hover {
+      border-color: #9b8b7d;
+      color: #9b8b7d;
+      background: #faf9f7;
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🐱</div>
+    <span>猫门智能排版器</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" onclick="clearAll()">清空重来</button>
+    <button class="btn btn-primary" onclick="copyAllCode()">📋 复制全部代码</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="editor-panel">
+    <!-- 输入面板 -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <div class="panel-title-icon">📝</div>
+          粘贴文章内容
+        </div>
+      </div>
+      <div class="input-section">
+        <div class="textarea-wrapper">
+          <textarea class="main-textarea" id="inputText" placeholder="在这里粘贴你的文章内容...
+
+支持的格式：
+• 纯文本 - 自动智能识别段落和金句
+• Markdown - 识别 **加粗**、> 引用、- 列表等
+
+示例：
+这是一段普通的正文内容。
+
+**这是需要强调的重点**
+
+> 这是一句金句，会被自动识别
+
+- 列表项一
+- 列表项二"></textarea>
+        </div>
+        <div class="input-hint">
+          💡 提示：支持 <code>**加粗**</code> <code>> 引用</code> <code>- 列表</code> <code>---分割线</code> 等Markdown语法
+        </div>
+      </div>
+      
+      <div class="scheme-section">
+        <span class="scheme-label">选择配色：</span>
+        <div class="scheme-options">
+          <button class="scheme-btn active" data-scheme="morandi" title="莫兰迪" style="background: linear-gradient(135deg, #9b8b7d, #c4b5a5);"></button>
+          <button class="scheme-btn" data-scheme="green" title="森绿" style="background: linear-gradient(135deg, #5d8a66, #7eb085);"></button>
+          <button class="scheme-btn" data-scheme="purple" title="薰衣草" style="background: linear-gradient(135deg, #8b7eb8, #a99cd1);"></button>
+          <button class="scheme-btn" data-scheme="milktea" title="奶茶" style="background: linear-gradient(135deg, #a67c52, #c9a77c);"></button>
+          <button class="scheme-btn" data-scheme="blackgold" title="黑金" style="background: linear-gradient(135deg, #2d2d2d, #c9a962);"></button>
+          <button class="scheme-btn" data-scheme="orange" title="暖橙" style="background: linear-gradient(135deg, #d35400, #e67e22);"></button>
+        </div>
+      </div>
+      
+      <div class="action-section">
+        <button class="btn-parse" onclick="parseContent()">✨ 智能解析并排版</button>
+        <button class="btn-add-image" onclick="openImageModal()">🖼️ 添加图片</button>
+      </div>
+    </div>
+    
+    <!-- 模块编辑区 -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <div class="panel-title-icon">📦</div>
+          内容模块
+          <span style="font-weight: 400; color: #999; font-size: 13px;" id="blockCount">(0个)</span>
+        </div>
+      </div>
+      <div class="blocks-container" id="blocksContainer">
+        <div class="empty-state">
+          <div class="empty-state-icon">📄</div>
+          <div class="empty-state-text">
+            粘贴文章内容后点击「智能解析」<br>
+            或手动添加内容模块
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 预览区 -->
+  <div class="preview-panel panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <div class="panel-title-icon">👁️</div>
+        实时预览
+      </div>
+    </div>
+    <div class="preview-scroll">
+      <div class="preview-content" id="previewContent">
+        <div style="text-align: center; color: #ccc; padding: 60px 20px;">
+          <div style="font-size: 48px; margin-bottom: 16px;">📱</div>
+          <div>预览效果将在这里显示</div>
+        </div>
+      </div>
+    </div>
+    <div class="preview-footer">
+      <button class="btn btn-secondary" onclick="copyAllCode()">复制代码</button>
+      <button class="btn btn-primary" onclick="downloadHTML()">下载HTML</button>
+    </div>
+  </div>
+</div>
+
+<!-- 图片模态框 -->
+<div class="modal-overlay" id="imageModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">添加图片</div>
+      <button class="modal-close" onclick="closeImageModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="text" class="modal-input" id="imageUrlInput" placeholder="粘贴图片链接 (http://...)">
+      <div class="modal-divider">或者</div>
+      <div class="modal-upload-area" onclick="document.getElementById('imageFileInput').click()">
+        <div style="font-size: 32px; margin-bottom: 8px;">📤</div>
+        <div style="color: #666;">点击上传图片</div>
+        <div style="color: #999; font-size: 12px; margin-top: 4px;">支持 JPG、PNG、GIF</div>
+        <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeImageModal()">取消</button>
+      <button class="btn btn-primary" onclick="addImageFromUrl()">添加图片</button>
+    </div>
+  </div>
+</div>
+
+<!-- 添加模块模态框 -->
+<div class="modal-overlay" id="addBlockModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">添加内容模块</div>
+      <button class="modal-close" onclick="closeAddBlockModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('paragraph')">📝 普通段落</button>
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('emphasis')">💪 强调文字</button>
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('quote')">💬 金句框</button>
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('heading')">📌 小标题</button>
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('list')">📋 列表项</button>
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('divider')">➖ 分割线</button>
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('card')">🎴 要点卡片</button>
+        <button class="btn btn-secondary" style="padding: 16px;" onclick="addBlockManual('tip')">🎁 彩蛋框</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ 已复制到剪贴板</div>
+
+<script>
+// 配色方案
+const schemes = {
+  morandi: {
+    primary: '#9b8b7d',
+    text: '#5a5a5a',
+    textLight: '#777777',
+    bgWarm: '#f7f5f3',
+    bgWarmEnd: '#efe9e4',
+    bgCard: '#f7f5f3',
+    border: '#c4b5a5'
+  },
+  green: {
+    primary: '#5d8a66',
+    text: '#3d4a3f',
+    textLight: '#666666',
+    bgWarm: '#f4f9f5',
+    bgWarmEnd: '#e8f2ea',
+    bgCard: '#f4f9f5',
+    border: '#7eb085'
+  },
+  purple: {
+    primary: '#8b7eb8',
+    text: '#4a4558',
+    textLight: '#666666',
+    bgWarm: '#f8f6fc',
+    bgWarmEnd: '#f0ecf8',
+    bgCard: '#f8f6fc',
+    border: '#a99cd1'
+  },
+  milktea: {
+    primary: '#a67c52',
+    text: '#4d4035',
+    textLight: '#6d5d4d',
+    bgWarm: '#faf6f1',
+    bgWarmEnd: '#f5ebe0',
+    bgCard: '#faf6f1',
+    border: '#c9a77c'
+  },
+  blackgold: {
+    primary: '#c9a962',
+    text: '#333333',
+    textLight: '#555555',
+    bgWarm: '#f9f8f5',
+    bgWarmEnd: '#f3f0e8',
+    bgCard: '#f9f8f5',
+    border: '#c9a962',
+    dark: '#2d2d2d'
+  },
+  orange: {
+    primary: '#d35400',
+    text: '#3f3f3f',
+    textLight: '#666666',
+    bgWarm: '#fff8f5',
+    bgWarmEnd: '#fff0e8',
+    bgCard: '#fffaf8',
+    border: '#e67e22'
+  }
+};
+
+let currentScheme = 'morandi';
+let blocks = []; // 存储所有模块
+let draggedItem = null;
+
+// 模块类型名称
+const blockTypeNames = {
+  paragraph: '普通段落',
+  emphasis: '强调文字',
+  quote: '金句框',
+  heading: '小标题',
+  list: '列表项',
+  divider: '分割线',
+  card: '要点卡片',
+  tip: '彩蛋框',
+  image: '图片',
+  footer: '底部联系'
+};
+
+// 解析文章内容
+function parseContent() {
+  const text = document.getElementById('inputText').value.trim();
+  if (!text) {
+    showToast('⚠️ 请先粘贴文章内容');
+    return;
+  }
+  
+  blocks = [];
+  const lines = text.split('\n');
+  let i = 0;
+  
+  while (i < lines.length) {
+    const line = lines[i].trim();
+    
+    // 跳过空行
+    if (!line) {
+      i++;
+      continue;
+    }
+    
+    // 分割线
+    if (/^[-*_]{3,}$/.test(line)) {
+      blocks.push({ type: 'divider', content: '' });
+      i++;
+      continue;
+    }
+    
+    // Markdown标题
+    if (/^#{1,3}\s+/.test(line)) {
+      const content = line.replace(/^#{1,3}\s+/, '');
+      blocks.push({ type: 'heading', content });
+      i++;
+      continue;
+    }
+    
+    // Markdown引用 -> 金句
+    if (/^>\s*/.test(line)) {
+      let quoteContent = line.replace(/^>\s*/, '');
+      // 检查是否有连续引用
+      while (i + 1 < lines.length && /^>\s*/.test(lines[i + 1].trim())) {
+        i++;
+        quoteContent += '\n' + lines[i].trim().replace(/^>\s*/, '');
+      }
+      blocks.push({ type: 'quote', content: quoteContent });
+      i++;
+      continue;
+    }
+    
+    // Markdown列表
+    if (/^[-*+]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
+      const listItems = [];
+      while (i < lines.length) {
+        const listLine = lines[i].trim();
+        if (/^[-*+]\s+/.test(listLine)) {
+          listItems.push(listLine.replace(/^[-*+]\s+/, ''));
+        } else if (/^\d+\.\s+/.test(listLine)) {
+          listItems.push(listLine.replace(/^\d+\.\s+/, ''));
+        } else if (listLine === '') {
+          break;
+        } else {
+          break;
+        }
+        i++;
+      }
+      blocks.push({ type: 'list', content: listItems.join('\n') });
+      continue;
+    }
+    
+    // 检查是否是纯粗体行 -> 强调或小标题
+    if (/^\*\*[^*]+\*\*$/.test(line) || /^__[^_]+__$/.test(line)) {
+      const content = line.replace(/^\*\*|\*\*$|^__|__$/g, '');
+      // 短的当小标题，长的当强调
+      if (content.length <= 15) {
+        blocks.push({ type: 'heading', content });
+      } else {
+        blocks.push({ type: 'emphasis', content });
+      }
+      i++;
+      continue;
+    }
+    
+    // 检查是否像金句（短句、有感悟性词汇）
+    if (isLikelyQuote(line)) {
+      blocks.push({ type: 'quote', content: cleanMarkdown(line) });
+      i++;
+      continue;
+    }
+    
+    // 普通段落（处理内联Markdown）
+    let paragraphContent = line;
+    // 收集连续的非特殊行作为一个段落
+    while (i + 1 < lines.length) {
+      const nextLine = lines[i + 1].trim();
+      if (!nextLine || isSpecialLine(nextLine)) break;
+      paragraphContent += '\n' + nextLine;
+      i++;
+    }
+    
+    // 检查段落中是否有需要强调的内容
+    if (/\*\*[^*]+\*\*/.test(paragraphContent) || /__[^_]+__/.test(paragraphContent)) {
+      blocks.push({ type: 'paragraph', content: paragraphContent, hasEmphasis: true });
+    } else {
+      blocks.push({ type: 'paragraph', content: paragraphContent });
+    }
+    i++;
+  }
+  
+  renderBlocks();
+  updatePreview();
+  showToast(`✅ 已解析出 ${blocks.length} 个内容模块`);
+}
+
+// 判断是否是特殊行
+function isSpecialLine(line) {
+  return /^[-*_]{3,}$/.test(line) || // 分割线
+         /^#{1,3}\s+/.test(line) || // 标题
+         /^>\s*/.test(line) || // 引用
+         /^[-*+]\s+/.test(line) || // 无序列表
+         /^\d+\.\s+/.test(line) || // 有序列表
+         /^\*\*[^*]+\*\*$/.test(line) || // 纯粗体
+         /^__[^_]+__$/.test(line); // 纯粗体
+}
+
+// 判断是否像金句
+function isLikelyQuote(line) {
+  const cleanLine = cleanMarkdown(line);
+  const length = cleanLine.length;
+  
+  // 长度适中的短句
+  if (length < 10 || length > 80) return false;
+  
+  // 包含感悟性词汇
+  const quoteKeywords = [
+    '真正', '其实', '人生', '生活', '记住', '永远', '从来', '最好', '最重要',
+    '不是', '而是', '就是', '才是', '都是', '才能', '才会', '不要', '要学会',
+    '懂得', '明白', '知道', '相信', '希望', '勇敢', '坚持', '选择', '成为',
+    '值得', '重要', '意义', '价值', '幸福', '快乐', '自由', '梦想', '未来'
+  ];
+  
+  const hasKeyword = quoteKeywords.some(kw => cleanLine.includes(kw));
+  
+  // 以特定标点结尾
+  const endsWithPunctuation = /[。！？…]$/.test(cleanLine);
+  
+  // 独立成段的短句（没有太多标点）
+  const punctuationCount = (cleanLine.match(/[，。！？、；：]/g) || []).length;
+  const isSimple = punctuationCount <= 3;
+  
+  return hasKeyword && endsWithPunctuation && isSimple && length >= 15 && length <= 60;
+}
+
+// 清理Markdown标记
+function cleanMarkdown(text) {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/__([^_]+)__/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/_([^_]+)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
+}
+
+// 渲染模块列表
+function renderBlocks() {
+  const container = document.getElementById('blocksContainer');
+  
+  if (blocks.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📄</div>
+        <div class="empty-state-text">
+          粘贴文章内容后点击「智能解析」<br>
+          或手动添加内容模块
+        </div>
+      </div>
+    `;
+    document.getElementById('blockCount').textContent = '(0个)';
+    return;
+  }
+  
+  let html = '';
+  blocks.forEach((block, index) => {
+    html += renderBlockItem(block, index);
+  });
+  
+  html += `<button class="add-block-btn" onclick="openAddBlockModal()">+ 添加模块</button>`;
+  
+  container.innerHTML = html;
+  document.getElementById('blockCount').textContent = `(${blocks.length}个)`;
+  
+  // 绑定拖拽事件
+  bindDragEvents();
+}
+
+// 渲染单个模块
+function renderBlockItem(block, index) {
+  const typeOptions = Object.entries(blockTypeNames)
+    .map(([value, label]) => `<option value="${value}" ${block.type === value ? 'selected' : ''}>${label}</option>`)
+    .join('');
+  
+  let contentHtml = '';
+  
+  if (block.type === 'divider') {
+    contentHtml = '<div style="text-align: center; color: #ccc;">———</div>';
+  } else if (block.type === 'image') {
+    contentHtml = `
+      <div class="block-image-wrapper">
+        ${block.content ? `<img src="${block.content}" class="block-image" alt="图片">` : ''}
+        <input type="text" class="image-url-input" value="${block.content || ''}" 
+               placeholder="图片链接" onchange="updateBlockContent(${index}, this.value)">
+      </div>
+    `;
+  } else {
+    contentHtml = `
+      <textarea class="block-textarea" 
+                placeholder="输入内容..."
+                onchange="updateBlockContent(${index}, this.value)"
+                onfocus="this.parentElement.parentElement.classList.add('editing')"
+                onblur="this.parentElement.parentElement.classList.remove('editing')"
+      >${block.content || ''}</textarea>
+    `;
+  }
+  
+  return `
+    <div class="block-item" draggable="true" data-index="${index}">
+      <div class="block-header">
+        <div class="block-type">
+          <select class="block-type-select" onchange="changeBlockType(${index}, this.value)">
+            ${typeOptions}
+          </select>
+        </div>
+        <div class="block-actions">
+          <button class="block-action-btn" onclick="moveBlockUp(${index})" title="上移">↑</button>
+          <button class="block-action-btn" onclick="moveBlockDown(${index})" title="下移">↓</button>
+          <button class="block-action-btn delete" onclick="deleteBlock(${index})" title="删除">×</button>
+        </div>
+      </div>
+      <div class="block-content">
+        ${contentHtml}
+      </div>
+    </div>
+  `;
+}
+
+// 更新模块内容
+function updateBlockContent(index, content) {
+  blocks[index].content = content;
+  updatePreview();
+}
+
+// 改变模块类型
+function changeBlockType(index, newType) {
+  blocks[index].type = newType;
+  renderBlocks();
+  updatePreview();
+}
+
+// 移动模块
+function moveBlockUp(index) {
+  if (index > 0) {
+    [blocks[index], blocks[index - 1]] = [blocks[index - 1], blocks[index]];
+    renderBlocks();
+    updatePreview();
+  }
+}
+
+function moveBlockDown(index) {
+  if (index < blocks.length - 1) {
+    [blocks[index], blocks[index + 1]] = [blocks[index + 1], blocks[index]];
+    renderBlocks();
+    updatePreview();
+  }
+}
+
+// 删除模块
+function deleteBlock(index) {
+  blocks.splice(index, 1);
+  renderBlocks();
+  updatePreview();
+}
+
+// 绑定拖拽事件
+function bindDragEvents() {
+  const items = document.querySelectorAll('.block-item');
+  
+  items.forEach(item => {
+    item.addEventListener('dragstart', handleDragStart);
+    item.addEventListener('dragend', handleDragEnd);
+    item.addEventListener('dragover', handleDragOver);
+    item.addEventListener('drop', handleDrop);
+    item.addEventListener('dragleave', handleDragLeave);
+  });
+}
+
+function handleDragStart(e) {
+  draggedItem = this;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+  document.querySelectorAll('.block-item').forEach(item => {
+    item.classList.remove('drag-over');
+  });
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  
+  if (draggedItem !== this) {
+    const fromIndex = parseInt(draggedItem.dataset.index);
+    const toIndex = parseInt(this.dataset.index);
+    
+    const [movedItem] = blocks.splice(fromIndex, 1);
+    blocks.splice(toIndex, 0, movedItem);
+    
+    renderBlocks();
+    updatePreview();
+  }
+}
+
+// 生成组件HTML
+function generateBlockHTML(block) {
+  const s = schemes[currentScheme];
+  
+  switch (block.type) {
+    case 'paragraph':
+      let pContent = block.content || '在此输入正文内容';
+      // 处理内联强调
+      pContent = pContent
+        .replace(/\*\*([^*]+)\*\*/g, `<strong style="color: ${s.primary};">$1</strong>`)
+        .replace(/__([^_]+)__/g, `<strong style="color: ${s.primary};">$1</strong>`)
+        .replace(/\n/g, '<br>');
+      return `<p style="font-size: 16px; color: ${s.text}; line-height: 2; letter-spacing: 0.5px; margin-bottom: 20px;">${pContent}</p>`;
+    
+    case 'emphasis':
+      return `<p style="font-size: 16px; color: ${s.text}; line-height: 2; margin-bottom: 20px;"><strong style="color: ${s.primary};">${block.content || '这是需要强调的重点内容'}</strong></p>`;
+    
+    case 'heading':
+      return `<p style="font-size: 18px; color: ${s.primary}; font-weight: bold; margin: 30px 0 15px 0;">${block.content || '小标题'}</p>`;
+    
+    case 'divider':
+      return `<p style="text-align: center; color: #ccc; margin: 30px 0; font-size: 14px;">———</p>`;
+    
+    case 'quote':
+      const quoteContent = (block.content || '在此输入金句内容').replace(/\n/g, '</p><p style="font-size: 17px; color: ' + s.primary + '; line-height: 2; margin: 10px 0 0 0; font-weight: bold;">');
+      return `<section style="background: linear-gradient(135deg, ${s.bgWarm} 0%, ${s.bgWarmEnd} 100%); border-left: 4px solid ${s.primary}; padding: 20px 25px; margin: 25px 0; border-radius: 0 8px 8px 0;"><p style="font-size: 17px; color: ${s.primary}; line-height: 2; margin: 0; font-weight: bold;">${quoteContent}</p></section>`;
+    
+    case 'list':
+      const items = (block.content || '列表项一\n列表项二\n列表项三').split('\n').filter(item => item.trim());
+      const listHtml = items.map(item => 
+        `<p style="font-size: 15px; color: ${s.textLight}; line-height: 2; margin-bottom: 8px; padding-left: 15px;">→ ${item.trim()}</p>`
+      ).join('');
+      return `<section style="background: ${s.bgCard}; padding: 25px; margin: 25px 0; border-radius: 12px;">${listHtml}</section>`;
+    
+    case 'card':
+      const cardItems = (block.content || '要点一\n说明内容\n要点二\n说明内容').split('\n').filter(item => item.trim());
+      let cardHtml = '';
+      for (let i = 0; i < cardItems.length; i += 2) {
+        const title = cardItems[i] || '';
+        const desc = cardItems[i + 1] || '';
+        cardHtml += `<p style="font-size: 16px; color: ${s.text}; line-height: 2; margin-bottom: 15px;"><strong style="color: ${s.primary}; font-size: 18px;">${title}</strong>${desc ? '<br>' + desc : ''}</p>`;
+      }
+      return `<section style="background: ${s.bgCard}; padding: 25px; margin: 25px 0; border-radius: 12px;">${cardHtml}</section>`;
+    
+    case 'tip':
+      return `<section style="border: 1px dashed ${s.border}; padding: 20px; margin: 25px 0; border-radius: 8px;"><p style="font-size: 14px; color: #999; line-height: 2; margin-bottom: 10px;">【小助手的悄悄话】</p><p style="font-size: 14px; color: ${s.textLight}; line-height: 2; margin-bottom: 10px;">${block.content || '这里是正文内容'}</p></section>`;
+    
+    case 'image':
+      if (block.content) {
+        return `<p style="text-align: center; margin: 25px 0;"><img src="${block.content}" style="max-width: 100%; border-radius: 8px;" alt=""></p>`;
+      }
+      return '';
+    
+    case 'footer':
+      return `<section style="background: ${s.bgCard}; padding: 20px; margin: 25px 0; border-radius: 12px; text-align: center;"><p style="font-size: 14px; color: ${s.textLight}; line-height: 2; margin-bottom: 10px;">◼️ ${block.content || '扫描海报二维码或点击「阅读原文」加入'}</p></section>`;
+    
+    default:
+      return '';
+  }
+}
+
+// 更新预览
+function updatePreview() {
+  const container = document.getElementById('previewContent');
+  
+  if (blocks.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; color: #ccc; padding: 60px 20px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">📱</div>
+        <div>预览效果将在这里显示</div>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  blocks.forEach(block => {
+    html += generateBlockHTML(block);
+  });
+  
+  container.innerHTML = html;
+}
+
+// 生成完整代码
+function generateFullCode() {
+  let html = '';
+  blocks.forEach(block => {
+    html += generateBlockHTML(block);
+  });
+  return html;
+}
+
+// 复制全部代码
+function copyAllCode() {
+  const code = generateFullCode();
+  if (!code) {
+    showToast('⚠️ 没有可复制的内容');
+    return;
+  }
+  
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('✅ 代码已复制到剪贴板');
+  });
+}
+
+// 下载HTML
+function downloadHTML() {
+  const code = generateFullCode();
+  if (!code) {
+    showToast('⚠️ 没有可下载的内容');
+    return;
+  }
+  
+  const blob = new Blob([code], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '公众号排版.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ 文件已下载');
+}
+
+// 清空全部
+function clearAll() {
+  if (blocks.length > 0 && !confirm('确定要清空所有内容吗？')) {
+    return;
+  }
+  blocks = [];
+  document.getElementById('inputText').value = '';
+  renderBlocks();
+  updatePreview();
+}
+
+// 图片相关
+function openImageModal() {
+  document.getElementById('imageModal').classList.add('show');
+  document.getElementById('imageUrlInput').value = '';
+}
+
+function closeImageModal() {
+  document.getElementById('imageModal').classList.remove('show');
+}
+
+function addImageFromUrl() {
+  const url = document.getElementById('imageUrlInput').value.trim();
+  if (url) {
+    blocks.push({ type: 'image', content: url });
+    renderBlocks();
+    updatePreview();
+    closeImageModal();
+    showToast('✅ 图片已添加');
+  }
+}
+
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      blocks.push({ type: 'image', content: event.target.result });
+      renderBlocks();
+      updatePreview();
+      closeImageModal();
+      showToast('✅ 图片已添加');
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// 添加模块模态框
+function openAddBlockModal() {
+  document.getElementById('addBlockModal').classList.add('show');
+}
+
+function closeAddBlockModal() {
+  document.getElementById('addBlockModal').classList.remove('show');
+}
+
+function addBlockManual(type) {
+  blocks.push({ type, content: '' });
+  renderBlocks();
+  updatePreview();
+  closeAddBlockModal();
+  
+  // 滚动到新添加的模块
+  setTimeout(() => {
+    const container = document.getElementById('blocksContainer');
+    const items = container.querySelectorAll('.block-item');
+    if (items.length > 0) {
+      items[items.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 100);
+}
+
+// Toast提示
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2000);
+}
+
+// 配色切换
+document.querySelectorAll('.scheme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scheme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentScheme = btn.dataset.scheme;
+    updatePreview();
+  });
+});
+
+// 点击模态框外部关闭
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('show');
+    }
+  });
+});
+</script>
+
+</body>
+</html>
