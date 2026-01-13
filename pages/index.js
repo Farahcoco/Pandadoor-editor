@@ -207,10 +207,14 @@ function generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal
 
 6. **建议配图位置**
    - 用 \`![图片](建议：描述)\` 标记
-   - 每600-800字建议一张
-   - 放在主题转换或情感高潮处
-   - 描述要具体，便于配图
-   - 示例：![图片](建议：一个人在窗边看雨，安静思考的画面)
+   - 每600-800字建议一张，放在主题转换或情感高潮处
+   - **描述必须包含**：场景环境 + 人物状态 + 情绪氛围 + 光线色调
+   - 描述要具体生动，能让人脑海中浮现画面
+   - 好的示例：
+     - ![图片](建议：深夜书房，一个人蜷缩在台灯下，周围堆满书本和咖啡杯，暖黄灯光映照疲惫但专注的侧脸)
+     - ![图片](建议：清晨公园长椅，阳光穿过树叶洒下斑驳光影，一个人闭眼微笑，享受片刻宁静)
+     - ![图片](建议：拥挤地铁车厢，一个人戴着耳机望向窗外，车窗倒映城市霓虹，神情若有所思)
+   - 坏的示例（太笼统）：![图片](建议：一个人在思考) ❌
 
 ## 格式规则（非常重要）
 
@@ -410,11 +414,20 @@ function parseBlocksFromText(text) {
 
     const imgMatch = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
     if (imgMatch) {
-      const desc = imgMatch[1] || imgMatch[2];
       const src = imgMatch[2];
       if (src.startsWith('http') || src.startsWith('data:')) {
         result.push({ type: 'image', content: src });
       } else {
+        // For image placeholders, extract description from parentheses content
+        // Remove "建议：" or "建议:" prefix if present
+        let desc = src;
+        if (desc.startsWith('建议：') || desc.startsWith('建议:')) {
+          desc = desc.replace(/^建议[：:]/, '').trim();
+        }
+        // If no meaningful description, fall back to alt text
+        if (!desc) {
+          desc = imgMatch[1] || '配图';
+        }
         const imgPrompt = generateImagePromptFromDesc(desc);
         result.push({ type: 'imagePlaceholder', content: desc, imgPrompt });
       }
