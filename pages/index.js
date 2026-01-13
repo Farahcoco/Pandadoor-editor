@@ -253,12 +253,25 @@ ${styleDesc}
 - \`## 小标题\` — 划分结构，3-5个
 - \`---\` — 分割线，放在主题转换处
 - \`- 列表项\` — 并列内容
-- \`![图片](建议：具体描述)\` — 配图建议，每600字一张
+- \`![图片](建议：详细描述)\` — 配图建议，每600字一张
+
+## 配图描述要求（非常重要）
+图片描述必须包含4个要素：**场景环境 + 人物状态 + 情绪氛围 + 光线色调**
+
+好的配图描述示例：
+- ![图片](建议：深夜卧室，一个人躺在床上辗转难眠，窗外城市灯光模糊，蓝色月光洒在疲惫却清醒的脸上)
+- ![图片](建议：阳光明媚的咖啡馆角落，一个人专注看书，咖啡杯冒着热气，暖色调营造惬意氛围)
+- ![图片](建议：雨天公交站，一个人撑伞独自等待，玻璃上雨滴滑落，灰蓝色调传递淡淡忧伤)
+
+配图风格要与文章风格一致：
+- 治愈系文章 → 温暖柔和的光线、自然场景、舒适氛围
+- 情绪张力文章 → 对比强烈的光影、都市场景、戏剧性构图
+- 干货类文章 → 简洁专业的环境、专注工作状态、明亮色调
 
 ## 格式规则（非常重要）
 - 金句（>）之间不能连续，中间必须有正文段落
 - 标题（##）之间不能连续
-- 图片建议要有具体描述，比如「建议：一个年轻人在咖啡馆专注工作」
+- 禁止使用笼统描述如「一个人在思考」「美丽的风景」
 
 ## 我的主题
 
@@ -290,12 +303,20 @@ ${styleDesc}
 - \`## 小标题\` — 划分结构
 - \`---\` — 分割线
 - \`- 列表项\` — 并列内容
-- \`![图片](建议：具体描述)\` — 配图建议，每600字一张
+- \`![图片](建议：详细描述)\` — 配图建议，每600字一张
+
+## 配图描述要求（非常重要）
+图片描述必须包含4个要素：**场景环境 + 人物状态 + 情绪氛围 + 光线色调**
+
+好的配图描述示例：
+- ![图片](建议：明亮的会议室，一群人围坐讨论，白板上画满思维导图，专注而热烈的氛围)
+- ![图片](建议：安静的图书馆一角，阳光斜照进来，一个人埋头做笔记，周围书籍环绕)
+- ![图片](建议：傍晚的办公室，一个人对着电脑屏幕，窗外夕阳余晖，既疲惫又有成就感)
 
 ## 格式规则（非常重要）
 - 金句（>）之间不能连续，中间必须有正文段落
 - 标题（##）之间不能连续
-- 图片建议要写清楚具体场景
+- 禁止使用笼统描述如「一个人在学习」「工作场景」
 
 ## 我的原始素材
 
@@ -326,11 +347,20 @@ ${styleDesc}
 - \`## 小标题\` — 划分结构
 - \`---\` — 分割线
 - \`- 列表项\` — 并列内容
-- \`![图片](建议：具体描述)\` — 配图建议，每600字一张
+- \`![图片](建议：详细描述)\` — 配图建议，每600字一张
+
+## 配图描述要求（非常重要）
+图片描述必须包含4个要素：**场景环境 + 人物状态 + 情绪氛围 + 光线色调**
+
+好的配图描述示例：
+- ![图片](建议：清晨窗边，一个人端着咖啡望向远方，薄雾笼罩城市，柔和的晨光带来希望感)
+- ![图片](建议：深夜书桌，笔记本上密密麻麻的字迹，一只手握着笔停顿，台灯投下温暖光圈)
+- ![图片](建议：人来人往的街头，一个人驻足抬头看天，周围人群模糊，阳光穿透云层)
 
 ## 格式规则（非常重要）
 - 金句（>）之间不能连续，中间必须有正文段落
 - 标题（##）之间不能连续
+- 禁止使用笼统描述如「美好的画面」「温馨场景」
 
 ## 我的素材片段
 
@@ -347,21 +377,58 @@ ${styleDesc}
 function generateImagePromptFromDesc(desc) {
   const baseStyle = 'soft lighting, editorial photography style, high quality, 4k';
   const translations = {
-    背影: 'back view, silhouette',
-    十字路口: 'crossroads, intersection',
-    犹豫: 'hesitant, contemplative',
-    阳光: 'sunlight, golden hour',
-    温暖: 'warm, cozy',
-    孤独: 'solitary, alone',
-    自由: 'freedom, free spirit',
-    思考: 'thinking, contemplative',
-    成长: 'growth, personal development',
-    希望: 'hope, hopeful',
+    // 场景环境
+    深夜: 'late night, midnight',
+    清晨: 'early morning, dawn',
+    傍晚: 'evening, dusk, golden hour',
     夜晚: 'night, evening',
+    书房: 'study room, home office',
+    卧室: 'bedroom, cozy room',
+    咖啡馆: 'coffee shop, cafe',
+    咖啡: 'coffee, cafe',
+    办公室: 'office, workspace',
+    图书馆: 'library, reading room',
+    公园: 'park, outdoor',
+    街头: 'street, urban scene',
+    地铁: 'subway, metro',
+    公交站: 'bus stop, station',
+    窗边: 'by the window, window side',
+    // 人物状态
+    背影: 'back view, silhouette',
+    侧脸: 'side profile, profile view',
+    闭眼: 'eyes closed, peaceful',
+    微笑: 'smiling, gentle smile',
+    沉思: 'deep in thought, pensive',
+    思考: 'thinking, contemplative',
+    专注: 'focused, concentrated',
+    疲惫: 'tired, exhausted',
+    孤独: 'solitary, alone',
+    等待: 'waiting, anticipating',
+    // 情绪氛围
+    温暖: 'warm, cozy',
+    宁静: 'peaceful, serene',
+    忧伤: 'melancholy, sad',
+    希望: 'hope, hopeful',
+    焦虑: 'anxious, worried',
+    自由: 'freedom, free spirit',
+    治愈: 'healing, soothing',
+    犹豫: 'hesitant, uncertain',
+    // 光线色调
+    阳光: 'sunlight, golden hour',
+    暖光: 'warm light, warm tone',
+    冷调: 'cool tone, blue hour',
+    柔和: 'soft, gentle',
+    斑驳: 'dappled light, mottled shadows',
+    霓虹: 'neon lights, city lights',
+    台灯: 'desk lamp, warm lamp light',
+    月光: 'moonlight, lunar glow',
+    // 其他元素
     城市: 'city, urban',
     自然: 'nature, natural',
     书籍: 'books, reading',
-    咖啡: 'coffee, cafe'
+    雨天: 'rainy day, rain',
+    十字路口: 'crossroads, intersection',
+    成长: 'growth, personal development'
   };
   let englishDesc = desc;
   Object.entries(translations).forEach(([cn, en]) => {
