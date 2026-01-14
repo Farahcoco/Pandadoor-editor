@@ -599,6 +599,20 @@ function generateBlockHTML(block, schemeKey) {
   }
 }
 
+function readClipboardImage(items, onLoad) {
+  if (!items) return false;
+  const imageItem = Array.from(items).find((item) => item.type && item.type.startsWith('image/'));
+  if (!imageItem) return false;
+  const file = imageItem.getAsFile();
+  if (!file) return false;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    if (event.target?.result) onLoad(event.target.result);
+  };
+  reader.readAsDataURL(file);
+  return true;
+}
+
 export default function Home() {
   const [currentStep, setCurrentStep] = useState(1);
   const [currentMode, setCurrentMode] = useState('A');
@@ -631,6 +645,7 @@ export default function Home() {
   const toastTimerRef = useRef(null);
   const fullArticleTimerRef = useRef(null);
   const skipFullTextSyncRef = useRef(false);
+  const modalPasteHandlerRef = useRef(null);
 
   const { lenReq, lenLimit, lenFinal } = useMemo(() => getLengthLabels(currentLength), [currentLength]);
   const styleDesc = useMemo(() => {
@@ -693,6 +708,31 @@ export default function Home() {
     }, 1000);
     return () => clearTimeout(fullArticleTimerRef.current);
   }, [fullArticleText, editorVisible]);
+
+  useEffect(() => {
+    if (!showImageModal) {
+      if (modalPasteHandlerRef.current) {
+        window.removeEventListener('paste', modalPasteHandlerRef.current);
+        modalPasteHandlerRef.current = null;
+      }
+      return;
+    }
+    const handler = (event) => {
+      const consumed = readClipboardImage(event.clipboardData?.items, (dataUrl) => {
+        setImageUrlInput(dataUrl);
+        showToast('✅ 已粘贴图片');
+      });
+      if (consumed) event.preventDefault();
+    };
+    modalPasteHandlerRef.current = handler;
+    window.addEventListener('paste', handler);
+    return () => {
+      if (modalPasteHandlerRef.current) {
+        window.removeEventListener('paste', modalPasteHandlerRef.current);
+        modalPasteHandlerRef.current = null;
+      }
+    };
+  }, [showImageModal]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -809,6 +849,26 @@ export default function Home() {
       setImageUrlInput(ev.target?.result || '');
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImagePaste = (event) => {
+    const consumed = readClipboardImage(event.clipboardData?.items, (dataUrl) => {
+      setImageUrlInput(dataUrl);
+      showToast('✅ 已粘贴图片');
+    });
+    if (consumed) event.preventDefault();
+  };
+
+  const handleBlockImagePaste = (event, index, convertToImage = false) => {
+    const consumed = readClipboardImage(event.clipboardData?.items, (dataUrl) => {
+      if (convertToImage) {
+        setBlocks((prev) => prev.map((b, i) => (i === index ? { type: 'image', content: dataUrl } : b)));
+      } else {
+        updateBlockContent(index, dataUrl);
+      }
+      showToast('✅ 已粘贴图片');
+    });
+    if (consumed) event.preventDefault();
   };
 
   const copyToClipboard = (text, toastText) => {
@@ -1255,11 +1315,19 @@ ${articleSummary}
                               className="block-input"
                               value={block.content || ''}
                               onChange={(e) => updateBlockContent(index, e.target.value)}
+                              onPaste={(e) => handleBlockImagePaste(e, index)}
                             />
                           )}
                           {block.type === 'imagePlaceholder' && (
-                            <div className="img-placeholder">
-                              <div className="img-placeholder-text">📷 {block.content}</div>
+                            <div
+                              className="img-placeholder"
+                              tabIndex={0}
+                              onClick={(e) => e.currentTarget.focus()}
+                              onPaste={(e) => handleBlockImagePaste(e, index, true)}
+                            >
+                              <div className="img-placeholder-text">
+                                📷 {block.content || '建议插入图片'}（可直接粘贴截图）
+                              </div>
                               {block.imgPrompt && (
                                 <div className="img-placeholder-prompt">💡 生成提示词：{block.imgPrompt}</div>
                               )}
@@ -1508,9 +1576,10 @@ ${articleSummary}
           <input
             type="text"
             id="imageUrlInput"
-            placeholder="粘贴图片URL，或上传图片后自动填入"
+            placeholder="可直接粘贴截图，或粘贴图片URL / 上传图片"
             value={imageUrlInput}
             onChange={(e) => setImageUrlInput(e.target.value)}
+            onPaste={handleImagePaste}
           />
           <input type="file" accept="image/*" onChange={handleImageUpload} style={{ marginTop: 8 }} />
           <div className="modal-actions">
