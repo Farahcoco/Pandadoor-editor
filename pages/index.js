@@ -63,6 +63,7 @@ const blockTypeOptions = [
   { id: 'emphasis', name: '强调' },
   { id: 'quote', name: '金句' },
   { id: 'heading', name: '标题' },
+  { id: 'note', name: '笔记卡' },
   { id: 'list', name: '列表' },
   { id: 'divider', name: '分割线' },
   { id: 'image', name: '图片' },
@@ -501,6 +502,21 @@ function extractImagePrompts(text) {
 function parseBlocksFromText(text) {
   const lines = text.split('\n');
   const result = [];
+  const noteKeywords = ['猫门笔记卡', '猫哥笔记卡', '心理学笔记', '认知笔记', '概念卡', '概念笔记', '心理学概念', '关键概念'];
+  const parseNoteLine = (line) => {
+    const bracketMatch = line.match(/^【([^】]+)】\s*(.*)$/);
+    if (bracketMatch) {
+      const title = bracketMatch[1].trim();
+      if (noteKeywords.some((key) => title.includes(key))) {
+        return { title, content: bracketMatch[2].trim() };
+      }
+    }
+    const inlineMatch = line.match(/^(?:[🐱🧠]\s*)?(猫门笔记卡|猫哥笔记卡|心理学笔记|认知笔记|概念卡|概念笔记)(?:\s*[-—:：])?\s*(.*)$/);
+    if (inlineMatch) {
+      return { title: inlineMatch[1], content: inlineMatch[2].trim() };
+    }
+    return null;
+  };
   for (let i = 0; i < lines.length; i += 1) {
     const raw = lines[i];
     const line = raw.trim();
@@ -520,6 +536,12 @@ function parseBlocksFromText(text) {
       const rawQuote = line.slice(2).trim();
       const cleanedQuote = rawQuote.replace(/^金句\s*[-—–:：]?\s*/i, '').trim();
       result.push({ type: 'quote', content: cleanedQuote });
+      continue;
+    }
+
+    const noteLine = parseNoteLine(line);
+    if (noteLine) {
+      result.push({ type: 'note', title: noteLine.title, content: noteLine.content });
       continue;
     }
 
@@ -594,6 +616,11 @@ function buildFullArticleText(blocks) {
           return `![图片](${b.content || ''})`;
         case 'emphasis':
           return `**${b.content || ''}**`;
+        case 'note': {
+          const title = b.title || '猫门笔记卡';
+          if (!b.content) return `【${title}】`;
+          return `【${title}】 ${b.content || ''}`;
+        }
         default:
           return b.content || '';
       }
@@ -619,9 +646,14 @@ function generateBlockHTML(block, schemeKey) {
     case 'quote': {
       const len = (block.content || '').length;
       if (len <= 40) {
-        return `<p style="font-size:17px;color:${s.primary};line-height:1.8;margin:28px 0;text-align:center;font-weight:600;">${formatInlineText(block.content)}</p>`;
+        return `<div style="position:relative;margin:28px 0;padding:18px 20px;border-radius:18px;background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});"><span style="position:absolute;left:14px;top:-10px;font-size:18px;opacity:.6;">🐾</span><p style="font-size:17px;color:${s.primary};line-height:1.8;margin:0;text-align:center;font-weight:600;">${formatInlineText(block.content)}</p></div>`;
       }
-      return `<section style="background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});border-left:3px solid ${s.primary};padding:18px 20px;margin:24px 0;border-radius:0 10px 10px 0;"><p style="font-size:15px;color:${s.primary};line-height:1.9;margin:0;font-weight:500;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
+      return `<section style="position:relative;background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});border-left:3px solid ${s.primary};padding:22px 22px 18px;margin:24px 0;border-radius:0 12px 12px 0;"><span style="position:absolute;left:16px;top:-12px;font-size:18px;opacity:.6;">🐾</span><span style="position:absolute;left:18px;top:14px;font-size:18px;color:${s.primary};opacity:.5;">“</span><p style="font-size:15px;color:${s.primary};line-height:1.9;margin:0;font-weight:500;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
+    }
+    case 'note': {
+      const title = block.title || '猫门笔记卡';
+      const body = formatInlineText(block.content).replace(/\n/g, '<br>');
+      return `<section style="border:2px solid ${s.primary};border-radius:18px;padding:18px 20px;margin:24px 0;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,0.04);"><div style="font-size:15px;font-weight:600;color:${s.primary};margin-bottom:8px;">🧠 ${title}</div><div style="font-size:14px;color:${s.text};line-height:1.9;">${body}</div></section>`;
     }
     case 'list': {
       const items = (block.content || '')
@@ -849,8 +881,21 @@ export default function Home() {
     setBlocks((prev) => prev.map((b, i) => (i === index ? { ...b, content: value } : b)));
   };
 
+  const updateBlockField = (index, field, value) => {
+    setBlocks((prev) => prev.map((b, i) => (i === index ? { ...b, [field]: value } : b)));
+  };
+
   const updateBlockType = (index, type) => {
-    setBlocks((prev) => prev.map((b, i) => (i === index ? { ...b, type } : b)));
+    setBlocks((prev) =>
+      prev.map((b, i) => {
+        if (i !== index) return b;
+        if (type === 'note') {
+          return { ...b, type, title: b.title || '猫门笔记卡', content: b.content || '' };
+        }
+        const { title, ...rest } = b;
+        return { ...rest, type };
+      })
+    );
   };
 
   const moveBlock = (index, delta) => {
@@ -868,6 +913,10 @@ export default function Home() {
   };
 
   const addBlock = (type) => {
+    if (type === 'note') {
+      setBlocks((prev) => [...prev, { type, title: '猫门笔记卡', content: '' }]);
+      return;
+    }
     setBlocks((prev) => [...prev, { type, content: '', imgPrompt: '' }]);
   };
 
@@ -1366,6 +1415,22 @@ ${articleSummary}
                         </div>
                         <div className="block-body">
                           {block.type === 'divider' && <div className="divider-preview">· · ·</div>}
+                          {block.type === 'note' && (
+                            <div className="note-edit">
+                              <input
+                                type="text"
+                                className="block-input"
+                                value={block.title || '猫门笔记卡'}
+                                onChange={(e) => updateBlockField(index, 'title', e.target.value)}
+                              />
+                              <textarea
+                                className="block-input"
+                                value={block.content || ''}
+                                onChange={(e) => updateBlockContent(index, e.target.value)}
+                                placeholder="写下你的笔记内容..."
+                              />
+                            </div>
+                          )}
                           {block.type === 'image' && (
                             <input
                               type="text"
@@ -1400,7 +1465,7 @@ ${articleSummary}
                               </div>
                             </div>
                           )}
-                          {block.type !== 'divider' && block.type !== 'image' && block.type !== 'imagePlaceholder' && (
+                          {block.type !== 'divider' && block.type !== 'image' && block.type !== 'imagePlaceholder' && block.type !== 'note' && (
                             <textarea
                               className="block-input"
                               value={block.content || ''}
@@ -1422,6 +1487,9 @@ ${articleSummary}
                   </button>
                   <button className="add-block-btn" onClick={() => addBlock('heading')}>
                     + 标题
+                  </button>
+                  <button className="add-block-btn" onClick={() => addBlock('note')}>
+                    + 笔记卡
                   </button>
                   <button className="add-block-btn" onClick={() => addBlock('divider')}>
                     + 分割线
