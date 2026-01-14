@@ -511,8 +511,8 @@ function parseBlocksFromText(text) {
       continue;
     }
 
-    if (line.startsWith('## ')) {
-      result.push({ type: 'heading', content: line.slice(3) });
+    if (/^#{2,4}\s+/.test(line)) {
+      result.push({ type: 'heading', content: line.replace(/^#{2,4}\s+/, '') });
       continue;
     }
 
@@ -603,32 +603,36 @@ function buildFullArticleText(blocks) {
 
 function generateBlockHTML(block, schemeKey) {
   const s = schemes[schemeKey];
+  const formatInlineText = (text) =>
+    (text || '').replace(/\*\*([^*]+)\*\*/g, `<strong style="color:${s.primary};">$1</strong>`);
   switch (block.type) {
     case 'paragraph': {
-      const p = (block.content || '')
-        .replace(/\*\*([^*]+)\*\*/g, `<strong style="color:${s.primary};">$1</strong>`)
-        .replace(/\n/g, '<br>');
+      const p = formatInlineText(block.content).replace(/\n/g, '<br>');
       return `<p style="font-size:15px;color:${s.text};line-height:2;margin-bottom:20px;">${p}</p>`;
     }
     case 'emphasis':
       return `<p style="font-size:15px;color:${s.text};line-height:2;margin-bottom:20px;"><strong style="color:${s.primary};">${block.content || ''}</strong></p>`;
     case 'heading':
-      return `<p style="font-size:17px;color:${s.primary};font-weight:600;margin:28px 0 16px;">${block.content || ''}</p>`;
+      return `<p style="font-size:17px;color:${s.primary};font-weight:600;margin:28px 0 16px;">${formatInlineText(block.content)}</p>`;
     case 'divider':
       return `<p style="text-align:center;color:${s.border};margin:28px 0;letter-spacing:8px;">···</p>`;
     case 'quote': {
       const len = (block.content || '').length;
       if (len <= 40) {
-        return `<p style="font-size:17px;color:${s.primary};line-height:1.8;margin:28px 0;text-align:center;font-weight:600;">${block.content || ''}</p>`;
+        return `<p style="font-size:17px;color:${s.primary};line-height:1.8;margin:28px 0;text-align:center;font-weight:600;">${formatInlineText(block.content)}</p>`;
       }
-      return `<section style="background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});border-left:3px solid ${s.primary};padding:18px 20px;margin:24px 0;border-radius:0 10px 10px 0;"><p style="font-size:15px;color:${s.primary};line-height:1.9;margin:0;font-weight:500;">${(block.content || '').replace(/\n/g, '<br>')}</p></section>`;
+      return `<section style="background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});border-left:3px solid ${s.primary};padding:18px 20px;margin:24px 0;border-radius:0 10px 10px 0;"><p style="font-size:15px;color:${s.primary};line-height:1.9;margin:0;font-weight:500;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
     }
     case 'list': {
-      const items = (block.content || '').split('\n').filter((x) => x.trim());
+      const items = (block.content || '')
+        .split('\n')
+        .map((item) => item.trim())
+        .filter((item) => item)
+        .filter((item) => item.replace(/[*_]+/g, '').trim());
       return `<section style="background:${s.bgCard};padding:18px 20px;margin:24px 0;border-radius:10px;border:1px solid ${s.border};">${items
         .map(
           (item) =>
-            `<p style="font-size:14px;color:${s.textLight};line-height:2;margin-bottom:8px;padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:${s.primary};">→</span>${item}</p>`
+            `<p style="font-size:14px;color:${s.textLight};line-height:2;margin-bottom:8px;padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:${s.primary};">→</span>${formatInlineText(item)}</p>`
         )
         .join('')}</section>`;
     }
