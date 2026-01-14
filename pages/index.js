@@ -63,7 +63,7 @@ const blockTypeOptions = [
   { id: 'emphasis', name: '强调' },
   { id: 'quote', name: '金句' },
   { id: 'heading', name: '标题' },
-  { id: 'note', name: '笔记卡' },
+  { id: 'note', name: '猫门笔记卡' },
   { id: 'list', name: '列表' },
   { id: 'divider', name: '分割线' },
   { id: 'image', name: '图片' },
@@ -182,6 +182,18 @@ const imagePromptOutputSpec = `## 输出要求
 
 提示：提示词请包含场景/主体/情绪/光线/风格，不要中文，不要解释。`;
 
+const noteCardOutputSpec = `## 猫门笔记卡（仅当文章包含心理学概念时输出）
+- 仅输出一个最重要的概念，不要罗列多个
+- 概念格式：中文（English）
+- 解释优先引用正文已有解释；若正文未解释，请补充一句直白易懂的学术解释
+- 笔记卡不属于正文，不要插入正文段落
+- 使用以下固定格式输出，并放在全文最后（在配图提示词之后）
+
+===猫门笔记卡===
+【概念】概念中文（English）
+【解释】一句话解释
+【水印】- 荣玥老师`;
+
 function getLengthLabels(currentLength) {
   const lenReq =
     currentLength === 'auto'
@@ -249,6 +261,8 @@ function generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal
 
 ${imagePromptOutputSpec}
 
+${noteCardOutputSpec}
+
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
   }
@@ -301,6 +315,8 @@ ${styleDesc}
 
 ${imagePromptOutputSpec}
 
+${noteCardOutputSpec}
+
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
   }
@@ -347,6 +363,8 @@ ${styleDesc}
 [把你的逐字稿/笔记粘贴在这里]
 
 ${imagePromptOutputSpec}
+
+${noteCardOutputSpec}
 
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
@@ -397,6 +415,8 @@ ${styleDesc}
 [如果有你自己的观点想融入，写在这里]
 
 ${imagePromptOutputSpec}
+
+${noteCardOutputSpec}
 
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
@@ -467,21 +487,79 @@ function generateImagePromptFromDesc(desc) {
   return `${englishDesc}, ${baseStyle} --ar 16:9`;
 }
 
-function splitImagePromptSection(text) {
-  const match = text.match(/===\s*配图提示词\s*===([\s\S]*?)$/);
-  if (!match) {
-    return { articleText: text.trim(), imagePrompts: {} };
-  }
-  const imgSection = match[1];
+function normalizeText(text) {
+  if (!text) return '';
+  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+function extractSection(text, marker) {
+  const normalized = normalizeText(text);
+  const regex = new RegExp(
+    `===\\s*${marker}\\s*===([\\s\\S]*?)(?=\\n\\s*===\\s*\\S+\\s*===|\\s*$)`
+  );
+  const match = normalized.match(regex);
+  if (!match) return { text: normalized.trim(), section: '' };
+  const section = match[1].trim();
+  const cleaned = normalized.replace(regex, '').trim();
+  return { text: cleaned, section };
+}
+
+function parseImagePrompts(section) {
+  if (!section) return {};
   return {
-    articleText: text.replace(/===\s*配图提示词\s*===[\s\S]*$/, '').trim(),
-    imagePrompts: {
-      cover: (imgSection.match(/【公众号封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
-      xhsCover: (imgSection.match(/【小红书封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
-      social: (imgSection.match(/【朋友圈配图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
-      quoteCard: (imgSection.match(/【金句卡片背景】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || ''
-    }
+    cover: (section.match(/【公众号封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
+    xhsCover: (section.match(/【小红书封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
+    social: (section.match(/【朋友圈配图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
+    quoteCard: (section.match(/【金句卡片背景】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || ''
   };
+}
+
+function parseNoteCard(section) {
+  if (!section) return null;
+  const concept = (section.match(/【概念】\s*([^\n]+)/) || [])[1]?.trim() || '';
+  const explanation = (section.match(/【解释】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '';
+  const watermark = (section.match(/【水印】\s*([^\n]+)/) || [])[1]?.trim() || '- 荣玥老师';
+  if (!concept && !explanation) return null;
+  return {
+    type: 'note',
+    title: '🐼 猫门笔记卡',
+    concept,
+    content: explanation,
+    watermark,
+    hidden: false
+  };
+}
+
+function splitImagePromptSection(text) {
+  const { text: cleaned, section } = extractSection(text, '配图提示词');
+  return { articleText: cleaned, imagePrompts: parseImagePrompts(section) };
+}
+
+function stripImagePromptText(text) {
+  if (!text) return text;
+  if (/===\s*配图提示词\s*===/.test(text)) {
+    return text.replace(/===\s*配图提示词\s*===[\s\S]*$/m, '').trim();
+  }
+  if (/【公众号封面图】|【小红书封面图】|【朋友圈配图】|【金句卡片背景】/.test(text)) {
+    return text.replace(/【公众号封面图】[\s\S]*$/m, '').trim();
+  }
+  return text;
+}
+
+function insertNoteBlock(parsedBlocks, noteBlock) {
+  if (!noteBlock) return parsedBlocks;
+  const conceptKey = (noteBlock.concept || '').split('（')[0].trim();
+  const insertIndex = conceptKey
+    ? parsedBlocks.findIndex((b) => b.content && b.content.includes(conceptKey))
+    : -1;
+  if (insertIndex >= 0) {
+    return [...parsedBlocks.slice(0, insertIndex + 1), noteBlock, ...parsedBlocks.slice(insertIndex + 1)];
+  }
+  return [...parsedBlocks, noteBlock];
+}
+
+function mergeNoteBlocks(parsedBlocks, noteBlocks) {
+  return noteBlocks.reduce((acc, note) => insertNoteBlock(acc, note), parsedBlocks);
 }
 
 function extractImagePrompts(text) {
@@ -491,12 +569,7 @@ function extractImagePrompts(text) {
   if (!/【公众号封面图】|【小红书封面图】|【朋友圈配图】|【金句卡片背景】/.test(text)) {
     return {};
   }
-  return {
-    cover: (text.match(/【公众号封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
-    xhsCover: (text.match(/【小红书封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
-    social: (text.match(/【朋友圈配图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
-    quoteCard: (text.match(/【金句卡片背景】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || ''
-  };
+  return parseImagePrompts(text);
 }
 
 function parseBlocksFromText(text) {
@@ -541,7 +614,14 @@ function parseBlocksFromText(text) {
 
     const noteLine = parseNoteLine(line);
     if (noteLine) {
-      result.push({ type: 'note', title: noteLine.title, content: noteLine.content });
+      result.push({
+        type: 'note',
+        title: noteLine.title,
+        concept: '',
+        content: noteLine.content,
+        watermark: '- 荣玥老师',
+        hidden: false
+      });
       continue;
     }
 
@@ -597,6 +677,7 @@ function parseBlocksFromText(text) {
 
 function buildFullArticleText(blocks) {
   return blocks
+    .filter((b) => b.type !== 'note')
     .map((b) => {
       switch (b.type) {
         case 'heading':
@@ -616,11 +697,6 @@ function buildFullArticleText(blocks) {
           return `![图片](${b.content || ''})`;
         case 'emphasis':
           return `**${b.content || ''}**`;
-        case 'note': {
-          const title = b.title || '猫门笔记卡';
-          if (!b.content) return `【${title}】`;
-          return `【${title}】 ${b.content || ''}`;
-        }
         default:
           return b.content || '';
       }
@@ -651,9 +727,12 @@ function generateBlockHTML(block, schemeKey) {
       return `<section style="position:relative;background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});border-left:3px solid ${s.primary};padding:22px 22px 18px;margin:24px 0;border-radius:0 12px 12px 0;"><span style="position:absolute;left:16px;top:-12px;font-size:18px;opacity:.6;">🐾</span><span style="position:absolute;left:18px;top:14px;font-size:18px;color:${s.primary};opacity:.5;">“</span><p style="font-size:15px;color:${s.primary};line-height:1.9;margin:0;font-weight:500;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
     }
     case 'note': {
-      const title = block.title || '猫门笔记卡';
+      if (block.hidden) return '';
+      const title = block.title || '🐼 猫门笔记卡';
+      const conceptLine = block.concept ? formatInlineText(block.concept) : '';
       const body = formatInlineText(block.content).replace(/\n/g, '<br>');
-      return `<section style="border:2px solid ${s.primary};border-radius:18px;padding:18px 20px;margin:24px 0;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,0.04);"><div style="font-size:15px;font-weight:600;color:${s.primary};margin-bottom:8px;">🧠 ${title}</div><div style="font-size:14px;color:${s.text};line-height:1.9;">${body}</div></section>`;
+      const watermark = block.watermark ? formatInlineText(block.watermark) : '';
+      return `<section style="border:2px solid ${s.primary};border-radius:18px;padding:18px 20px;margin:24px 0;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,0.04);position:relative;"><div style="font-size:15px;font-weight:600;color:${s.primary};margin-bottom:6px;">${title}</div>${conceptLine ? `<div style="font-size:14px;color:${s.primary};font-weight:600;margin-bottom:6px;">${conceptLine}</div>` : ''}<div style="font-size:14px;color:${s.text};line-height:1.9;">${body}</div>${watermark ? `<div style="position:absolute;right:16px;bottom:10px;font-size:12px;color:${s.textLight};">${watermark}</div>` : ''}</section>`;
     }
     case 'list': {
       const items = (block.content || '')
@@ -725,6 +804,7 @@ export default function Home() {
   const toastTimerRef = useRef(null);
   const fullArticleTimerRef = useRef(null);
   const skipFullTextSyncRef = useRef(false);
+  const previewRef = useRef(null);
   const modalPasteHandlerRef = useRef(null);
 
   const { lenReq, lenLimit, lenFinal } = useMemo(() => getLengthLabels(currentLength), [currentLength]);
@@ -753,7 +833,12 @@ export default function Home() {
     if (!blocks.length) {
       return '<div style="text-align:center;color:#999;padding:40px">预览内容</div>';
     }
-    return blocks.map((b) => generateBlockHTML(b, currentScheme)).join('');
+    return blocks
+      .map((b, i) => {
+        const html = generateBlockHTML(b, currentScheme);
+        return `<div data-block-index="${i}" style="margin:0;padding:0;">${html}</div>`;
+      })
+      .join('');
   }, [blocks, currentScheme]);
 
   useEffect(() => {
@@ -850,31 +935,46 @@ export default function Home() {
   };
 
   const parseContent = () => {
-    const text = inputText.trim();
+    const text = normalizeText(inputText).trim();
     if (!text) {
       showToast('⚠️ 请先粘贴内容');
       return;
     }
-    const { articleText, imagePrompts: extractedPrompts } = splitImagePromptSection(text);
-    const parsedBlocks = parseBlocksFromText(articleText);
-    setBlocks(parsedBlocks);
+    const noteExtract = extractSection(text, '猫门笔记卡');
+    const { articleText, imagePrompts: extractedPrompts } = splitImagePromptSection(noteExtract.text);
+    const cleanedArticle = stripImagePromptText(articleText);
+    const parsedBlocks = parseBlocksFromText(cleanedArticle);
+    const noteBlock = parseNoteCard(noteExtract.section);
+    const nextBlocks = insertNoteBlock(parsedBlocks, noteBlock);
+    setBlocks(nextBlocks);
     setImagePrompts(extractedPrompts);
     setEditorVisible(true);
     setMaterialsVisible(false);
     skipFullTextSyncRef.current = false;
-    showToast(`✅ 解析完成，共${parsedBlocks.length}个模块`);
+    showToast(`✅ 解析完成，共${nextBlocks.length}个模块`);
   };
 
   const parseContentSilent = (text) => {
-    const articleText = text.replace(/===配图提示词===[\s\S]*$/, '').trim();
+    const normalized = normalizeText(text);
+    const noteExtract = extractSection(normalized, '猫门笔记卡');
+    const articleText = stripImagePromptText(splitImagePromptSection(noteExtract.text).articleText);
     const parsedBlocks = parseBlocksFromText(articleText);
-    setBlocks(parsedBlocks);
+    const noteBlock = parseNoteCard(noteExtract.section);
+    setBlocks((prev) => {
+      const existingNotes = prev.filter((b) => b.type === 'note');
+      const notesToUse = noteBlock ? [noteBlock] : existingNotes;
+      return mergeNoteBlocks(parsedBlocks, notesToUse);
+    });
   };
 
   const syncFromFullArticle = () => {
     skipFullTextSyncRef.current = true;
-    setInputText(fullArticleText);
-    parseContentSilent(fullArticleText);
+    const rawText = normalizeText(fullArticleText);
+    const noteExtract = extractSection(rawText, '猫门笔记卡');
+    const cleanedArticle = stripImagePromptText(splitImagePromptSection(noteExtract.text).articleText);
+    setInputText(rawText);
+    parseContentSilent(rawText);
+    setFullArticleText(cleanedArticle);
   };
 
   const updateBlockContent = (index, value) => {
@@ -890,12 +990,28 @@ export default function Home() {
       prev.map((b, i) => {
         if (i !== index) return b;
         if (type === 'note') {
-          return { ...b, type, title: b.title || '猫门笔记卡', content: b.content || '' };
+          return {
+            ...b,
+            type,
+            title: b.title || '🐼 猫门笔记卡',
+            concept: b.concept || '',
+            content: b.content || '',
+            watermark: b.watermark || '- 荣玥老师',
+            hidden: b.hidden || false
+          };
         }
-        const { title, ...rest } = b;
+        const { title, concept, watermark, hidden, ...rest } = b;
         return { ...rest, type };
       })
     );
+  };
+
+  const scrollToPreviewBlock = (index) => {
+    const container = previewRef.current;
+    if (!container) return;
+    const target = container.querySelector(`[data-block-index="${index}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
   const moveBlock = (index, delta) => {
@@ -914,10 +1030,17 @@ export default function Home() {
 
   const addBlock = (type) => {
     if (type === 'note') {
-      setBlocks((prev) => [...prev, { type, title: '猫门笔记卡', content: '' }]);
+      setBlocks((prev) => [
+        ...prev,
+        { type, title: '🐼 猫门笔记卡', concept: '', content: '', watermark: '- 荣玥老师', hidden: false }
+      ]);
       return;
     }
     setBlocks((prev) => [...prev, { type, content: '', imgPrompt: '' }]);
+  };
+
+  const toggleBlockHidden = (index) => {
+    setBlocks((prev) => prev.map((b, i) => (i === index ? { ...b, hidden: !b.hidden } : b)));
   };
 
   const openImageModalFor = (index, insertAfter) => {
@@ -1381,7 +1504,12 @@ ${articleSummary}
                     <div style={{ textAlign: 'center', color: '#999', padding: 40 }}>暂无内容</div>
                   ) : (
                     blocks.map((block, index) => (
-                      <div className="block-item" key={`${block.type}-${index}`}>
+                      <div
+                        className="block-item"
+                        key={`${block.type}-${index}`}
+                        onFocusCapture={() => scrollToPreviewBlock(index)}
+                        onClick={() => scrollToPreviewBlock(index)}
+                      >
                         <div className="block-head">
                           <select
                             className="block-type-sel"
@@ -1395,6 +1523,11 @@ ${articleSummary}
                             ))}
                           </select>
                           <div className="block-actions">
+                            {block.type === 'note' && (
+                              <button className="block-act-btn" onClick={() => toggleBlockHidden(index)}>
+                                {block.hidden ? '🙈' : '👁'}
+                              </button>
+                            )}
                             <button className="block-act-btn" onClick={() => moveBlock(index, -1)}>
                               ↑
                             </button>
@@ -1420,14 +1553,28 @@ ${articleSummary}
                               <input
                                 type="text"
                                 className="block-input"
-                                value={block.title || '猫门笔记卡'}
+                                value={block.title || '🐼 猫门笔记卡'}
                                 onChange={(e) => updateBlockField(index, 'title', e.target.value)}
+                              />
+                              <input
+                                type="text"
+                                className="block-input"
+                                value={block.concept || ''}
+                                onChange={(e) => updateBlockField(index, 'concept', e.target.value)}
+                                placeholder="概念：自我效能感（Self-efficacy）"
                               />
                               <textarea
                                 className="block-input"
                                 value={block.content || ''}
                                 onChange={(e) => updateBlockContent(index, e.target.value)}
                                 placeholder="写下你的笔记内容..."
+                              />
+                              <input
+                                type="text"
+                                className="block-input"
+                                value={block.watermark || ''}
+                                onChange={(e) => updateBlockField(index, 'watermark', e.target.value)}
+                                placeholder="- 荣玥老师"
                               />
                             </div>
                           )}
@@ -1537,6 +1684,7 @@ ${articleSummary}
                   <div
                     className="phone-content"
                     id="previewContent"
+                    ref={previewRef}
                     dangerouslySetInnerHTML={{ __html: previewHtml }}
                   />
                   <div className="phone-bottom">
