@@ -162,6 +162,25 @@ const materialPromptPlaceholders = {
   D: '[把你收集的各种素材粘贴在这里，用 --- 分隔不同素材]'
 };
 
+const imagePromptOutputSpec = `## 输出要求
+1. 先输出完整文章
+2. 在文章末尾追加配图提示词，必须严格使用以下格式（英文提示词）：
+
+===配图提示词===
+【公众号封面图】
+(英文 Midjourney 提示词，2.35:1 横版，概括文章主题且吸引点击)
+
+【小红书封面图】
+(英文提示词，3:4 竖版，年轻化、有吸引力)
+
+【朋友圈配图】
+(英文提示词，1:1 方形，氛围感强)
+
+【金句卡片背景】
+(英文提示词，简洁干净的背景，适合放文字)
+
+提示：提示词请包含场景/主体/情绪/光线/风格，不要中文，不要解释。`;
+
 function getLengthLabels(currentLength) {
   const lenReq =
     currentLength === 'auto'
@@ -227,8 +246,10 @@ function generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal
 
 [把你的文章粘贴在这里]
 
+${imagePromptOutputSpec}
+
 ---
-请直接输出处理后的文章，不要解释。`;
+请直接输出完整内容（文章 + 配图提示词），不要解释。`;
   }
 
   if (currentMode === 'B') {
@@ -277,8 +298,10 @@ ${styleDesc}
 
 [在这里输入你的主题或想法]
 
+${imagePromptOutputSpec}
+
 ---
-请直接输出完整文章，不要解释。`;
+请直接输出完整内容（文章 + 配图提示词），不要解释。`;
   }
 
   if (currentMode === 'C') {
@@ -322,8 +345,10 @@ ${styleDesc}
 
 [把你的逐字稿/笔记粘贴在这里]
 
+${imagePromptOutputSpec}
+
 ---
-请直接输出提炼后的文章，不要解释。`;
+请直接输出完整内容（文章 + 配图提示词），不要解释。`;
   }
 
   return `你是一位资深内容创作者，请帮我把多个素材整合成一篇原创文章。
@@ -370,8 +395,10 @@ ${styleDesc}
 
 [如果有你自己的观点想融入，写在这里]
 
+${imagePromptOutputSpec}
+
 ---
-请直接输出原创文章，不要解释。`;
+请直接输出完整内容（文章 + 配图提示词），不要解释。`;
 }
 
 function generateImagePromptFromDesc(desc) {
@@ -440,19 +467,34 @@ function generateImagePromptFromDesc(desc) {
 }
 
 function splitImagePromptSection(text) {
-  const match = text.match(/===配图提示词===([\s\S]*?)$/);
+  const match = text.match(/===\s*配图提示词\s*===([\s\S]*?)$/);
   if (!match) {
     return { articleText: text.trim(), imagePrompts: {} };
   }
   const imgSection = match[1];
   return {
-    articleText: text.replace(/===配图提示词===[\s\S]*$/, '').trim(),
+    articleText: text.replace(/===\s*配图提示词\s*===[\s\S]*$/, '').trim(),
     imagePrompts: {
       cover: (imgSection.match(/【公众号封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
       xhsCover: (imgSection.match(/【小红书封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
       social: (imgSection.match(/【朋友圈配图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
       quoteCard: (imgSection.match(/【金句卡片背景】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || ''
     }
+  };
+}
+
+function extractImagePrompts(text) {
+  if (!text) return {};
+  const { imagePrompts } = splitImagePromptSection(text);
+  if (Object.keys(imagePrompts).some((key) => imagePrompts[key])) return imagePrompts;
+  if (!/【公众号封面图】|【小红书封面图】|【朋友圈配图】|【金句卡片背景】/.test(text)) {
+    return {};
+  }
+  return {
+    cover: (text.match(/【公众号封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
+    xhsCover: (text.match(/【小红书封面图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
+    social: (text.match(/【朋友圈配图】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || '',
+    quoteCard: (text.match(/【金句卡片背景】\s*([\s\S]*?)(?=【|$)/) || [])[1]?.trim() || ''
   };
 }
 
@@ -475,7 +517,9 @@ function parseBlocksFromText(text) {
     }
 
     if (line.startsWith('> ')) {
-      result.push({ type: 'quote', content: line.slice(2) });
+      const rawQuote = line.slice(2).trim();
+      const cleanedQuote = rawQuote.replace(/^金句\s*[-—–:：]?\s*/i, '').trim();
+      result.push({ type: 'quote', content: cleanedQuote });
       continue;
     }
 
@@ -758,6 +802,15 @@ export default function Home() {
 
   const goToStep = (step) => {
     setCurrentStep(step);
+    if (step === 4 && blocks.length > 0) {
+      generateMaterials();
+    }
+    if (step === 4) {
+      const extracted = extractImagePrompts(inputText);
+      if (Object.keys(extracted).some((key) => extracted[key])) {
+        setImagePrompts(extracted);
+      }
+    }
   };
 
   const parseContent = () => {
@@ -1519,7 +1572,7 @@ ${articleSummary}
                     {imagePrompts.cover || '解析后显示'}
                   </div>
                   <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('cover')}>
-                    复制
+                    复制提示词
                   </button>
                 </div>
                 <div className="image-prompt-item">
@@ -1528,7 +1581,7 @@ ${articleSummary}
                     {imagePrompts.xhsCover || '解析后显示'}
                   </div>
                   <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('xhsCover')}>
-                    复制
+                    复制提示词
                   </button>
                 </div>
                 <div className="image-prompt-item">
@@ -1537,7 +1590,7 @@ ${articleSummary}
                     {imagePrompts.social || '解析后显示'}
                   </div>
                   <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('social')}>
-                    复制
+                    复制提示词
                   </button>
                 </div>
                 <div className="image-prompt-item">
@@ -1546,7 +1599,7 @@ ${articleSummary}
                     {imagePrompts.quoteCard || '解析后显示'}
                   </div>
                   <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('quoteCard')}>
-                    复制
+                    复制提示词
                   </button>
                 </div>
               </div>
