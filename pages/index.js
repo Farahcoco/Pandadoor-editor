@@ -146,6 +146,18 @@ const lengthOptions = [
   { id: 'auto', label: '自动判断' }
 ];
 
+const imageStylePresets = [
+  { id: 'photo', label: '📷 电影摄影', keywords: 'cinematic editorial photo, 35mm film look, shallow depth of field, soft natural light, high detail' },
+  { id: 'lineart', label: '✒️ 极简线描', keywords: 'minimalist line art with details, fine ink illustration, hand-drawn texture, organic lines, vintage paper background, elegant composition, subtle hatching, artistic sketch, zen aesthetic, distinct character outlines, high quality, expressive strokes' },
+  { id: 'handdrawn_note', label: '📝 手绘笔记图', keywords: 'hand-drawn note style, notebook paper background, ink pen sketch, bullet journal aesthetic, colorful highlights, visual note-taking, doodle icons, warm cozy feeling' },
+  { id: 'handdrawn_mindmap', label: '🧠 手绘思维导图', keywords: 'hand-drawn mind map, central concept with branches, colorful markers, whiteboard style, creative brainstorming, visual hierarchy, connecting lines, educational illustration' },
+  { id: 'illustration', label: '🎨 扁平插画', keywords: 'flat vector illustration, soft pastel colors, minimalist design, clean geometric shapes, modern graphic style' },
+  { id: 'watercolor', label: '🎐 水彩风', keywords: 'delicate watercolor painting, soft edges, dreamy atmosphere, gentle color wash, artistic brushstrokes' },
+  { id: '3d', label: '🧸 3D卡通', keywords: '3D render, Pixar style, soft lighting, cute character, rounded shapes, vibrant colors' },
+  { id: 'anime', label: '✨ 动漫风', keywords: 'anime style illustration, soft lighting, detailed background, studio ghibli aesthetic, warm colors' },
+  { id: 'minimalist', label: '◻️ 极简风', keywords: 'minimalist design, clean white background, simple shapes, negative space, elegant typography area' }
+];
+
 const materialPlaceholders = {
   A: ['把你已写好的文章粘贴到下方', '在这里粘贴你已写好的完整文章...'],
   B: [
@@ -163,31 +175,33 @@ const materialPromptPlaceholders = {
   D: '[把你收集的各种素材粘贴在这里，用 --- 分隔不同素材]'
 };
 
-const imagePromptOutputSpec = `## 输出要求
+const imagePromptOutputSpec = `## 输出要求（必须全部完成）
 1. 先输出完整文章
-2. 在文章末尾追加配图提示词，必须严格使用以下格式（英文提示词）：
+2. **【必须】在文章末尾追加配图提示词**，使用以下格式（英文提示词）：
 
 ===配图提示词===
 【公众号封面图】
-(英文 Midjourney 提示词，2.35:1 横版，概括文章主题且吸引点击)
+(英文 Midjourney 提示词，2.35:1 横版，吸引点击)
 
 【小红书封面图】
-(英文提示词，3:4 竖版，年轻化、有吸引力)
+(英文提示词，3:4 竖版，年轻化)
 
 【朋友圈配图】
-(英文提示词，1:1 方形，氛围感强)
+(英文提示词，1:1 方形，氛围感)
 
 【金句卡片背景】
-(英文提示词，简洁干净的背景，适合放文字)
+(英文提示词，简洁背景，适合放文字)
 
-提示：提示词请包含场景/主体/情绪/光线/风格，不要中文，不要解释。`;
+配图类型选择：根据文章内容选用最合适的类型——概念关系图/思维导图/对比图/流程图/隐喻象征图/场景氛围图。不要全用场景图。
+提示词包含：主体/构图/色彩/风格。全英文，不解释。`;
 
 const noteCardOutputSpec = `## 猫门笔记卡（仅当文章包含心理学概念时输出）
-- 仅输出一个最重要的概念，不要罗列多个
+- **输出 1-3 个关键概念**（如果有多个重要概念）
 - 概念格式：中文（English）
 - 解释优先引用正文已有解释；若正文未解释，请补充一句直白易懂的学术解释
-- 笔记卡不属于正文，不要插入正文段落
-- 使用以下固定格式输出，并放在全文最后（在配图提示词之后）
+- **位置要求（非常重要）：请将笔记卡【紧跟】在提及该概念的段落之后，严格插入在正文中！**
+- **禁止**：绝对不要把所有笔记卡堆在文章末尾！
+- 使用以下固定格式输出：
 
 ===猫门笔记卡===
 【概念】概念中文（English）
@@ -210,13 +224,27 @@ function getLengthLabels(currentLength) {
 }
 
 function generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal }) {
+  const diagramSection = `
+7. **增加可视化图解建议**（新增模块）
+   - 针对复杂的概念对比、实验流程、核心观点总结，单独生成【图表/笔记类】配图建议
+   - **格式**：\`![图解](建议：...)\`
+   - **适用场景**：
+     - 当文中出现对比（如拼图实验的拿钱组vs没拿钱组）→ 建议生成 **对比图 (Comparison Chart)**
+     - 当文中有关键概念模型（如三个圈的交集）→ 建议生成 **韦恩图 (Venn Diagram)**
+     - 当文中有核心观点总结 → 建议生成 **手绘笔记图 (Sketchnote)** 或 **思维导图 (Mind Map)**
+   - **图解描述示例**：
+     - ![图解](建议：Venn diagram with 3 overlapping circles labeled Autonomy, Competence, Relatedness, warm hand-drawn style)
+     - ![图解](建议：Split screen comparison: Group A playing puzzle happily vs Group B stopping immediately after payment, simple flat illustration)
+     - ![图解](建议：Visual note summary of the Internalization Process, arrow flow from external to internal, doodle style)`;
+
   if (currentMode === 'A') {
     return `你是一位资深公众号排版编辑，请帮我优化文章的排版格式。
 
 ## 你需要做的事
 
 1. **提炼金句**（每篇3-5句）
-   - 用 \`>\` 标记
+   - 用 \`> 内容\` 标记
+   - **注意**：不要在金句前加「金句：」等标签，直接写内容
    - 好金句的标准：有洞察、反常识、能引发共鸣、让人想截图分享
    - 金句可长可短，关键是要有力量，不要为了短而丢失意义
    - 示例：> 我们焦虑的不是未来，而是对未来的想象。
@@ -246,12 +274,15 @@ function generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal
      - ![图片](建议：深夜书房，一个人蜷缩在台灯下，周围堆满书本和咖啡杯，暖黄灯光映照疲惫但专注的侧脸)
      - ![图片](建议：清晨公园长椅，阳光穿过树叶洒下斑驳光影，一个人闭眼微笑，享受片刻宁静)
      - ![图片](建议：拥挤地铁车厢，一个人戴着耳机望向窗外，车窗倒映城市霓虹，神情若有所思)
-   - 坏的示例（太笼统）：![图片](建议：一个人在思考) ❌
+     - **![图片](建议：Diagram: Venn diagram showing intersection of Passion, Skill, and Market, flat vector style)** (当涉及概念对比时)
+     - **![图片](建议：Chart: Comparison bar chart between Group A and Group B, clean minimalist design)** (当涉及数据/分组对比时)
+   - 坏的示例（太笼统）：![图片](建议：一个人在思考) ❌${diagramSection}
 
 ## 格式规则（非常重要）
 
 - 金句（>）后面不能紧跟另一个金句，中间要有正文
 - 标题（##）后面不能紧跟另一个标题
+- **不要**输出「爽点：」、「共鸣点：」等标签，这些是写作指导，不要作为正文输出
 - 保留原文所有核心信息
 - 长段落拆成短段落（每段3-5句）
 
@@ -267,6 +298,7 @@ ${noteCardOutputSpec}
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
   }
 
+  // Fix for other modes if they have same issue
   if (currentMode === 'B') {
     return `你是一位资深公众号爆款写手，请根据我给的主题创作一篇高质量文章。
 
@@ -274,17 +306,17 @@ ${noteCardOutputSpec}
 ${styleDesc}
 
 ## 文章要求
-1. 字数：${lenReq}
-2. 开头3秒抓住读者（用故事、问题、反常识观点等）
-3. 每300-400字要有一个「爽点」或「共鸣点」
-4. 金句要有洞察力，让人想截图分享
-5. 结尾要有行动号召或情感升华
+    1. 字数：${lenReq}
+    2. 开头3秒抓住读者（用故事、问题、反常识观点等）
+    3. 写作技巧：每300-400字设置一个「爽点」或「共鸣点」（**注意：这是写作指导，不要在文中标记出来**）
+    4. 金句要有洞察力，让人想截图分享（不要加标签）
+    5. 结尾要有行动号召或情感升华
 
 ## 输出格式（必须严格遵守）
 
-用以下Markdown格式输出：
+    用以下Markdown格式输出：
 
-- \`> 金句\` — 有洞察、有力量的句子，每篇4-6句
+    - \`> 内容\` — 有洞察、有力量的句子，每篇4-6句（不要加「金句」标签）
 - \`**强调**\` — 关键词强调
 - \`## 小标题\` — 划分结构，3-5个
 - \`---\` — 分割线，放在主题转换处
@@ -298,15 +330,17 @@ ${styleDesc}
 - ![图片](建议：深夜卧室，一个人躺在床上辗转难眠，窗外城市灯光模糊，蓝色月光洒在疲惫却清醒的脸上)
 - ![图片](建议：阳光明媚的咖啡馆角落，一个人专注看书，咖啡杯冒着热气，暖色调营造惬意氛围)
 - ![图片](建议：雨天公交站，一个人撑伞独自等待，玻璃上雨滴滑落，灰蓝色调传递淡淡忧伤)
+- ![图片](建议：Diagram: Flowchart showing the habit formation loop, simple lines, white background)
 
 配图风格要与文章风格一致：
 - 治愈系文章 → 温暖柔和的光线、自然场景、舒适氛围
 - 情绪张力文章 → 对比强烈的光影、都市场景、戏剧性构图
-- 干货类文章 → 简洁专业的环境、专注工作状态、明亮色调
+- 干货类文章/对比分析 → **使用图表/图示 (Diagram/Chart)**，简洁专业的扁平风格${diagramSection}
 
 ## 格式规则（非常重要）
 - 金句（>）之间不能连续，中间必须有正文段落
 - 标题（##）之间不能连续
+- **不要**出现「爽点」、「共鸣点」等标签
 - 禁止使用笼统描述如「一个人在思考」「美丽的风景」
 
 ## 我的主题
@@ -338,7 +372,7 @@ ${styleDesc}
 
 用以下Markdown格式输出：
 
-- \`> 金句\` — 从原文提炼或改写，要有洞察力
+- \`> 内容\` — 从原文提炼或改写，要有洞察力（不要加「金句」标签）
 - \`**强调**\` — 关键概念
 - \`## 小标题\` — 划分结构
 - \`---\` — 分割线
@@ -352,10 +386,12 @@ ${styleDesc}
 - ![图片](建议：明亮的会议室，一群人围坐讨论，白板上画满思维导图，专注而热烈的氛围)
 - ![图片](建议：安静的图书馆一角，阳光斜照进来，一个人埋头做笔记，周围书籍环绕)
 - ![图片](建议：傍晚的办公室，一个人对着电脑屏幕，窗外夕阳余晖，既疲惫又有成就感)
+- ![图片](建议：Chart: Pie chart showing time distribution, soft colors, minimal design)${diagramSection}
 
 ## 格式规则（非常重要）
 - 金句（>）之间不能连续，中间必须有正文段落
 - 标题（##）之间不能连续
+- **不要**出现「爽点」等标签
 - 禁止使用笼统描述如「一个人在学习」「工作场景」
 
 ## 我的原始素材
@@ -386,8 +422,8 @@ ${styleDesc}
 
 用以下Markdown格式输出：
 
-- \`> 金句\` — 必须是原创表达，有洞察力
-- \`**强调**\` — 关键概念
+- \`> 内容\` — 必须是原创表达，有洞察力（不要加「金句」标签）
+- \`**强调**\` — 关键词强调
 - \`## 小标题\` — 划分结构
 - \`---\` — 分割线
 - \`- 列表项\` — 并列内容
@@ -399,11 +435,12 @@ ${styleDesc}
 好的配图描述示例：
 - ![图片](建议：清晨窗边，一个人端着咖啡望向远方，薄雾笼罩城市，柔和的晨光带来希望感)
 - ![图片](建议：深夜书桌，笔记本上密密麻麻的字迹，一只手握着笔停顿，台灯投下温暖光圈)
-- ![图片](建议：人来人往的街头，一个人驻足抬头看天，周围人群模糊，阳光穿透云层)
+- ![图片](建议：人来人往的街头，一个人驻足抬头看天，周围人群模糊，阳光穿透云层)${diagramSection}
 
 ## 格式规则（非常重要）
 - 金句（>）之间不能连续，中间必须有正文段落
 - 标题（##）之间不能连续
+- **不要**出现「爽点」等标签
 - 禁止使用笼统描述如「美好的画面」「温馨场景」
 
 ## 我的素材片段
@@ -425,6 +462,13 @@ ${noteCardOutputSpec}
 function generateImagePromptFromDesc(desc) {
   const baseStyle = 'soft lighting, editorial photography style, high quality, 4k';
   const translations = {
+    // 图表类
+    diagram: 'flat vector illustration, clean lines, white background, high quality infographic',
+    chart: 'data visualization, bar chart, pie chart, clean design, business style',
+    venn: 'venn diagram, overlapping circles, flat design, educational illustration',
+    comparison: 'comparison chart, before and after, split screen, infographic style',
+    mindmap: 'mind map, branching structure, central idea, colorful markers, whiteboard style',
+    flowchart: 'flowchart, process diagram, arrows and boxes, logical structure, minimal design',
     // 场景环境
     深夜: 'late night, midnight',
     清晨: 'early morning, dawn',
@@ -478,10 +522,19 @@ function generateImagePromptFromDesc(desc) {
     十字路口: 'crossroads, intersection',
     成长: 'growth, personal development'
   };
+
+  // Check for diagram keywords first to override base style
+  const diagramKeywords = ['diagram', 'chart', 'venn', 'comparison', 'mindmap', 'flowchart', '图表', '对比', '思维导图'];
+  const isDiagram = diagramKeywords.some(k => desc.toLowerCase().includes(k));
+
+  if (isDiagram) {
+    return `${desc}, flat vector style, white background, high quality, minimalist design --ar 16:9`;
+  }
+
   let englishDesc = desc;
   Object.entries(translations).forEach(([cn, en]) => {
-    if (desc.includes(cn)) {
-      englishDesc = `${en}, ${englishDesc.replace(cn, '')}`;
+    if (desc.toLowerCase().includes(cn.toLowerCase())) {
+      englishDesc = `${en}, ${englishDesc.replace(new RegExp(cn, 'gi'), '')}`;
     }
   });
   return `${englishDesc}, ${baseStyle} --ar 16:9`;
@@ -607,8 +660,80 @@ function parseBlocksFromText(text) {
 
     if (line.startsWith('> ')) {
       const rawQuote = line.slice(2).trim();
-      const cleanedQuote = rawQuote.replace(/^金句\s*[-—–:：]?\s*/i, '').trim();
+      // Enhanced regex to strip various forms of "Golden Sentence" labels
+      // Fixed regex: escaped hyphen to avoid "Range out of order" error
+      const cleanedQuote = rawQuote.replace(/^(\*\*|【)?(金句|Golden Sentence)(\*\*|】)?\s*[:：\-—]?\s*/i, '').trim();
       result.push({ type: 'quote', content: cleanedQuote });
+      continue;
+    }
+
+    if (line.includes('===猫门笔记卡===') || line.trim() === '【猫门笔记卡】') {
+      let concept = '';
+      let explanation = '';
+      let watermark = '- 荣玥老师';
+
+      // Consume lines until we find the end or next block
+      while (i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        if (!nextLine) {
+          i++;
+          continue;
+        }
+
+        if (nextLine.startsWith('【概念】')) {
+          concept = nextLine.replace('【概念】', '').trim();
+          i++;
+        } else if (nextLine.startsWith('【解释】')) {
+          explanation = nextLine.replace('【解释】', '').trim();
+          i++;
+        } else if (nextLine.startsWith('【水印】')) {
+          watermark = nextLine.replace('【水印】', '').trim();
+          i++;
+        } else if (nextLine.startsWith('===')) {
+          // End of block if it's another delimiter, or just consume it if it's the closing ===
+          i++;
+          break;
+          break;
+        } else if (nextLine.startsWith('![')) {
+          // Image started, break
+          break;
+        } else if (nextLine.startsWith('#')) {
+          break;
+        } else {
+          // Append to explanation if we are in the middle of one
+          if (explanation && !watermark) {
+            explanation += '\n' + nextLine;
+            i++;
+          } else {
+            break;
+          }
+        }
+      }
+
+      result.push({
+        type: 'note',
+        title: '🐼 猫门笔记卡',
+        concept,
+        content: explanation,
+        watermark,
+        hidden: false
+      });
+      continue;
+    }
+
+    // Handle explicit diagram/visual note suggestions
+    const diagramMatch = line.match(/^!\[图解\]\(建议[：:]?([^)]+)\)/);
+    if (diagramMatch) {
+      const desc = diagramMatch[1].trim();
+      // Force a diagrammatic style for these
+      const imgPrompt = generateImagePromptFromDesc(desc + ', diagram, visual note');
+      result.push({
+        type: 'imagePlaceholder',
+        content: `📊 图解建议：${desc}`,
+        imgPrompt,
+        imgStyle: 'handdrawn_mindmap', // Default to a diagram style
+        isDiagram: true
+      });
       continue;
     }
 
@@ -801,6 +926,13 @@ export default function Home() {
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [editingImageIndex, setEditingImageIndex] = useState(null);
 
+  // Image prompt style and watermark state
+  const [imageStyles, setImageStyles] = useState({ cover: 'photo', xhsCover: 'photo', social: 'photo', quoteCard: 'photo' });
+  const [imageWatermarks, setImageWatermarks] = useState({ cover: '荣玥老师', xhsCover: '荣玥老师', social: '荣玥老师', quoteCard: '荣玥老师' });
+  const [showWatermarks, setShowWatermarks] = useState({ cover: true, xhsCover: true, social: true, quoteCard: true });
+  const [showDiagrams, setShowDiagrams] = useState(true);
+  const [generatedImages, setGeneratedImages] = useState({});
+
   const toastTimerRef = useRef(null);
   const fullArticleTimerRef = useRef(null);
   const skipFullTextSyncRef = useRef(false);
@@ -835,11 +967,12 @@ export default function Home() {
     }
     return blocks
       .map((b, i) => {
+        if (b.isDiagram && !showDiagrams) return '';
         const html = generateBlockHTML(b, currentScheme);
         return `<div data-block-index="${i}" style="margin:0;padding:0;">${html}</div>`;
       })
       .join('');
-  }, [blocks, currentScheme]);
+  }, [blocks, currentScheme, showDiagrams]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -940,38 +1073,33 @@ export default function Home() {
       showToast('⚠️ 请先粘贴内容');
       return;
     }
-    const noteExtract = extractSection(text, '猫门笔记卡');
-    const { articleText, imagePrompts: extractedPrompts } = splitImagePromptSection(noteExtract.text);
+    // Remove manual extraction of note cards to allow natural inline parsing
+    // The parseBlocksFromText function already handles ===猫门笔记卡=== blocks inline
+    const { articleText, imagePrompts: extractedPrompts } = splitImagePromptSection(text);
     const cleanedArticle = stripImagePromptText(articleText);
     const parsedBlocks = parseBlocksFromText(cleanedArticle);
-    const noteBlock = parseNoteCard(noteExtract.section);
-    const nextBlocks = insertNoteBlock(parsedBlocks, noteBlock);
-    setBlocks(nextBlocks);
+
+    setBlocks(parsedBlocks);
     setImagePrompts(extractedPrompts);
     setEditorVisible(true);
     setMaterialsVisible(false);
     skipFullTextSyncRef.current = false;
-    showToast(`✅ 解析完成，共${nextBlocks.length}个模块`);
+    showToast(`✅ 解析完成，共${parsedBlocks.length}个模块`);
   };
 
   const parseContentSilent = (text) => {
     const normalized = normalizeText(text);
-    const noteExtract = extractSection(normalized, '猫门笔记卡');
-    const articleText = stripImagePromptText(splitImagePromptSection(noteExtract.text).articleText);
+    // Remove manual note extraction here too
+    const articleText = stripImagePromptText(splitImagePromptSection(normalized).articleText);
     const parsedBlocks = parseBlocksFromText(articleText);
-    const noteBlock = parseNoteCard(noteExtract.section);
-    setBlocks((prev) => {
-      const existingNotes = prev.filter((b) => b.type === 'note');
-      const notesToUse = noteBlock ? [noteBlock] : existingNotes;
-      return mergeNoteBlocks(parsedBlocks, notesToUse);
-    });
+    setBlocks(parsedBlocks);
   };
 
   const syncFromFullArticle = () => {
     skipFullTextSyncRef.current = true;
     const rawText = normalizeText(fullArticleText);
-    const noteExtract = extractSection(rawText, '猫门笔记卡');
-    const cleanedArticle = stripImagePromptText(splitImagePromptSection(noteExtract.text).articleText);
+    // Remove manual note extraction here too
+    const cleanedArticle = stripImagePromptText(splitImagePromptSection(rawText).articleText);
     setInputText(rawText);
     parseContentSilent(rawText);
     setFullArticleText(cleanedArticle);
@@ -1098,6 +1226,39 @@ export default function Home() {
       showToast('✅ 已粘贴图片');
     });
     if (consumed) event.preventDefault();
+  };
+
+  const updateBlockImageStyle = (index, styleId) => {
+    setBlocks((prev) => prev.map((b, i) => (i === index ? { ...b, imgStyle: styleId } : b)));
+  };
+
+  const getStyledBlockPrompt = (block) => {
+    const basePrompt = block.imgPrompt || '';
+    if (!basePrompt) return '';
+    const styleId = block.imgStyle || 'photo';
+    const stylePreset = imageStylePresets.find((s) => s.id === styleId);
+    if (!stylePreset || styleId === 'photo') return basePrompt;
+    // Replace photo keywords with selected style
+    const photoKeywords = /cinematic|editorial photo|35mm film|film look|shallow depth of field|photography|soft natural light/gi;
+    return basePrompt.replace(photoKeywords, '').replace(/,\s*,/g, ',').trim() + ', ' + stylePreset.keywords;
+  };
+
+  const copyStyledBlockPrompt = (index) => {
+    const block = blocks[index];
+    if (!block) return;
+    const prompt = getStyledBlockPrompt(block);
+    copyToClipboard(prompt, '✅ 提示词已复制');
+  };
+
+  const copyBlockPromptAndJump = (index, url) => {
+    const block = blocks[index];
+    if (!block) return;
+    const prompt = getStyledBlockPrompt(block);
+    if (!prompt) return;
+    navigator.clipboard.writeText(prompt).then(() => {
+      showToast('✅ 已复制，正在跳转...');
+      setTimeout(() => window.open(url, '_blank'), 300);
+    });
   };
 
   const copyToClipboard = (text, toastText) => {
@@ -1233,6 +1394,79 @@ ${articleSummary}
     copyToClipboard(prompt, '✅ 已复制');
   };
 
+  const getStyledImagePrompt = (type) => {
+    const basePrompt = imagePrompts[type] || '';
+    if (!basePrompt) return '';
+    const styleId = imageStyles[type] || 'photo';
+    const stylePreset = imageStylePresets.find((s) => s.id === styleId);
+    if (!stylePreset || styleId === 'photo') return basePrompt;
+    // Replace photo keywords with selected style
+    const photoKeywords = /cinematic|editorial photo|35mm film|film look|shallow depth of field|photography/gi;
+    return basePrompt.replace(photoKeywords, '').replace(/,\s*,/g, ',').trim() + ', ' + stylePreset.keywords;
+  };
+
+  const copyImagePromptAndJump = (type, url) => {
+    const prompt = getStyledImagePrompt(type);
+    const watermark = showWatermarks[type] ? imageWatermarks[type] : '';
+    const finalPrompt = watermark ? `${prompt}\n\n[水印文字：${watermark}]` : prompt;
+    if (!finalPrompt) return;
+    navigator.clipboard.writeText(finalPrompt).then(() => {
+      showToast('✅ 已复制，正在跳转...');
+      setTimeout(() => window.open(url, '_blank'), 300);
+    });
+  };
+
+  const handleImageStyleChange = (type, styleId) => {
+    setImageStyles((prev) => ({ ...prev, [type]: styleId }));
+  };
+
+  const handleImageWatermarkChange = (type, value) => {
+    setImageWatermarks((prev) => ({ ...prev, [type]: value }));
+  };
+
+  const toggleWatermark = (type) => {
+    setShowWatermarks((prev) => ({ ...prev, [type]: !prev[type] }));
+  };
+
+  const handleGeneratedImagePaste = (type, e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (!file) continue;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setGeneratedImages((prev) => ({ ...prev, [type]: ev.target.result }));
+          showToast('✅ 图片已粘贴');
+        };
+        reader.readAsDataURL(file);
+        e.preventDefault();
+        return;
+      }
+    }
+  };
+
+  const handleGeneratedImageUpload = (type, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setGeneratedImages((prev) => ({ ...prev, [type]: ev.target.result }));
+      showToast('✅ 图片已上传');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeGeneratedImage = (type) => {
+    setGeneratedImages((prev) => {
+      const next = { ...prev };
+      delete next[type];
+      return next;
+    });
+    showToast('已删除图片');
+  };
+
   const generateFullCode = () =>
     blocks
       .filter((b) => b.type !== 'imagePlaceholder')
@@ -1251,12 +1485,16 @@ ${articleSummary}
   const exportAll = () => {
     let content = '# 猫门智能排版器导出\n\n';
     content += `## 排版后的文章代码\n\n\`\`\`html\n${generateFullCode()}\n\`\`\`\n\n`;
-    if (Object.keys(imagePrompts).length) {
+    if (Object.keys(imagePrompts).length || Object.keys(generatedImages).length) {
       content += '## 配图提示词\n\n';
       if (imagePrompts.cover) content += `### 公众号封面图\n${imagePrompts.cover}\n\n`;
+      if (generatedImages.cover) content += `![公众号封面图](${generatedImages.cover})\n\n`;
       if (imagePrompts.xhsCover) content += `### 小红书封面图\n${imagePrompts.xhsCover}\n\n`;
+      if (generatedImages.xhsCover) content += `![小红书封面图](${generatedImages.xhsCover})\n\n`;
       if (imagePrompts.social) content += `### 朋友圈配图\n${imagePrompts.social}\n\n`;
+      if (generatedImages.social) content += `![朋友圈配图](${generatedImages.social})\n\n`;
       if (imagePrompts.quoteCard) content += `### 金句卡片背景\n${imagePrompts.quoteCard}\n\n`;
+      if (generatedImages.quoteCard) content += `![金句卡片背景](${generatedImages.quoteCard})\n\n`;
     }
     if (Object.keys(materials).length) {
       content += '## 营销物料\n\n';
@@ -1316,6 +1554,8 @@ ${articleSummary}
                   </div>
                 ))}
               </div>
+
+
 
               <div id="styleSection" className={`style-section${currentMode === 'A' ? ' hidden' : ''}`}>
                 <div className="style-tabs">
@@ -1489,9 +1729,26 @@ ${articleSummary}
               <div className="full-article-editor">
                 <div className="full-article-header">
                   <div className="full-article-title">📝 完整文章（可直接编辑）</div>
-                  <button className="btn btn-sm btn-outline" onClick={syncFromFullArticle}>
-                    同步到模块
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none', background: '#f5f5f5', padding: '4px 8px', borderRadius: '6px' }}>
+                      <input
+                        type="checkbox"
+                        checked={showDiagrams}
+                        onChange={(e) => setShowDiagrams(e.target.checked)}
+                        style={{
+                          width: '16px',
+                          height: '16px',
+                          marginRight: '6px',
+                          accentColor: '#333',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <span style={{ fontSize: '13px', color: '#333' }}>👁️ 显示图解</span>
+                    </label>
+                    <button className="btn btn-sm btn-outline" onClick={syncFromFullArticle}>
+                      同步到模块
+                    </button>
+                  </div>
                 </div>
                 <textarea
                   className="full-article-textarea"
@@ -1610,13 +1867,33 @@ ${articleSummary}
                                 📷 {block.content || '建议插入图片'}（可直接粘贴截图）
                               </div>
                               {block.imgPrompt && (
-                                <div className="img-placeholder-prompt">💡 生成提示词：{block.imgPrompt}</div>
+                                <>
+                                  <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: 12, color: '#888' }}>风格:</span>
+                                    <select
+                                      value={block.imgStyle || 'photo'}
+                                      onChange={(e) => updateBlockImageStyle(index, e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ padding: '3px 6px', borderRadius: 4, border: '1px solid #ddd', fontSize: 12 }}
+                                    >
+                                      {imageStylePresets.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                                    </select>
+                                  </div>
+                                  <div className="img-placeholder-prompt">💡 生成提示词：{getStyledBlockPrompt(block)}</div>
+                                </>
                               )}
-                              <div className="img-placeholder-actions">
+                              <div className="img-placeholder-actions" style={{ flexWrap: 'wrap', gap: 6 }}>
                                 {block.imgPrompt && (
-                                  <button className="btn btn-secondary btn-sm" onClick={() => copyImgPrompt(index)}>
-                                    复制提示词
-                                  </button>
+                                  <>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => copyStyledBlockPrompt(index)}>
+                                      复制提示词
+                                    </button>
+                                    <button className="ai-btn" onClick={() => copyBlockPromptAndJump(index, 'https://claude.ai')}>Claude</button>
+                                    <button className="ai-btn" onClick={() => copyBlockPromptAndJump(index, 'https://chat.openai.com')}>ChatGPT</button>
+                                    <button className="ai-btn" onClick={() => copyBlockPromptAndJump(index, 'https://gemini.google.com/')}>Gemini</button>
+                                    <button className="ai-btn" onClick={() => copyBlockPromptAndJump(index, 'https://kimi.moonshot.cn')}>Kimi</button>
+                                    <button className="ai-btn" onClick={() => copyBlockPromptAndJump(index, 'https://www.doubao.com/chat/')}>豆包</button>
+                                  </>
                                 )}
                                 <button className="btn btn-secondary btn-sm" onClick={() => openImageModalFor(index)}>
                                   上传图片
@@ -1798,41 +2075,196 @@ ${articleSummary}
                 <div className="card-title">🖼️ 配图提示词</div>
               </div>
               <div className="card-body">
+                {/* Cover Image */}
                 <div className="image-prompt-item">
                   <div className="image-prompt-title">公众号封面图 (2.35:1横版)</div>
-                  <div className="image-prompt-text" id="coverImagePrompt">
-                    {imagePrompts.cover || '解析后显示'}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select value={imageStyles.cover} onChange={(e) => handleImageStyleChange('cover', e.target.value)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}>
+                      {imageStylePresets.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer', userSelect: 'none' }}>
+                      <input type="checkbox" checked={showWatermarks.cover} onChange={() => toggleWatermark('cover')} />
+                      水印{showWatermarks.cover ? ':' : ''}
+                    </label>
+                    {showWatermarks.cover && (
+                      <input type="text" value={imageWatermarks.cover} onChange={(e) => handleImageWatermarkChange('cover', e.target.value)} placeholder="荣玥老师" style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', width: 100, fontSize: 13 }} />
+                    )}
                   </div>
-                  <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('cover')}>
-                    复制提示词
-                  </button>
+                  <div className="image-prompt-text" id="coverImagePrompt">{getStyledImagePrompt('cover') || '解析后显示'}</div>
+                  <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="btn btn-sm btn-outline" onClick={() => copyImagePrompt('cover')}>复制提示词</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('cover', 'https://claude.ai')}>Claude</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('cover', 'https://chat.openai.com')}>ChatGPT</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('cover', 'https://gemini.google.com/')}>Gemini</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('cover', 'https://kimi.moonshot.cn')}>Kimi</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('cover', 'https://www.doubao.com/chat/')}>豆包</button>
+                  </div>
+                  <div style={{ marginTop: 12, padding: 12, border: '2px dashed #ddd', borderRadius: 8, background: '#fafafa', textAlign: 'center' }} onPaste={(e) => handleGeneratedImagePaste('cover', e)}>
+                    {generatedImages.cover ? (
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <img src={generatedImages.cover} alt="cover" style={{ maxWidth: 200, borderRadius: 6 }} />
+                        {showWatermarks.cover && imageWatermarks.cover && (
+                          <div style={{
+                            position: 'absolute', bottom: 8, right: 8, color: 'rgba(255,255,255,0.9)',
+                            fontSize: 12, fontWeight: 500, textShadow: '0 1px 2px rgba(0,0,0,0.6)', pointerEvents: 'none'
+                          }}>@{imageWatermarks.cover}</div>
+                        )}
+                        <button onClick={() => removeGeneratedImage('cover')} style={{ position: 'absolute', top: -8, right: -8, background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ color: '#999', fontSize: 13, marginBottom: 6 }}>点击此区域后 Ctrl+V 粘贴图片，或</div>
+                        <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer' }}>
+                          选择文件
+                          <input type="file" accept="image/*" onChange={(e) => handleGeneratedImageUpload('cover', e)} style={{ display: 'none' }} />
+                        </label>
+                      </>
+                    )}
+                  </div>
                 </div>
+
+                {/* XHS Cover */}
                 <div className="image-prompt-item">
                   <div className="image-prompt-title">小红书封面图 (3:4竖版)</div>
-                  <div className="image-prompt-text" id="xhsCoverImagePrompt">
-                    {imagePrompts.xhsCover || '解析后显示'}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select value={imageStyles.xhsCover} onChange={(e) => handleImageStyleChange('xhsCover', e.target.value)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}>
+                      {imageStylePresets.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer', userSelect: 'none' }}>
+                      <input type="checkbox" checked={showWatermarks.xhsCover} onChange={() => toggleWatermark('xhsCover')} />
+                      水印{showWatermarks.xhsCover ? ':' : ''}
+                    </label>
+                    {showWatermarks.xhsCover && (
+                      <input type="text" value={imageWatermarks.xhsCover} onChange={(e) => handleImageWatermarkChange('xhsCover', e.target.value)} placeholder="荣玥老师" style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', width: 100, fontSize: 13 }} />
+                    )}
                   </div>
-                  <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('xhsCover')}>
-                    复制提示词
-                  </button>
+                  <div className="image-prompt-text" id="xhsCoverImagePrompt">{getStyledImagePrompt('xhsCover') || '解析后显示'}</div>
+                  <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="btn btn-sm btn-outline" onClick={() => copyImagePrompt('xhsCover')}>复制提示词</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('xhsCover', 'https://claude.ai')}>Claude</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('xhsCover', 'https://chat.openai.com')}>ChatGPT</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('xhsCover', 'https://gemini.google.com/')}>Gemini</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('xhsCover', 'https://kimi.moonshot.cn')}>Kimi</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('xhsCover', 'https://www.doubao.com/chat/')}>豆包</button>
+                  </div>
+                  <div style={{ marginTop: 12, padding: 12, border: '2px dashed #ddd', borderRadius: 8, background: '#fafafa', textAlign: 'center' }} onPaste={(e) => handleGeneratedImagePaste('xhsCover', e)}>
+                    {generatedImages.xhsCover ? (
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <img src={generatedImages.xhsCover} alt="xhsCover" style={{ maxWidth: 200, borderRadius: 6 }} />
+                        {showWatermarks.xhsCover && imageWatermarks.xhsCover && (
+                          <div style={{
+                            position: 'absolute', bottom: 8, right: 8, color: 'rgba(255,255,255,0.9)',
+                            fontSize: 12, fontWeight: 500, textShadow: '0 1px 2px rgba(0,0,0,0.6)', pointerEvents: 'none'
+                          }}>@{imageWatermarks.xhsCover}</div>
+                        )}
+                        <button onClick={() => removeGeneratedImage('xhsCover')} style={{ position: 'absolute', top: -8, right: -8, background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ color: '#999', fontSize: 13, marginBottom: 6 }}>点击此区域后 Ctrl+V 粘贴图片，或</div>
+                        <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer' }}>
+                          选择文件
+                          <input type="file" accept="image/*" onChange={(e) => handleGeneratedImageUpload('xhsCover', e)} style={{ display: 'none' }} />
+                        </label>
+                      </>
+                    )}
+                  </div>
                 </div>
+
+                {/* Social Image with Watermark */}
                 <div className="image-prompt-item">
                   <div className="image-prompt-title">朋友圈配图 (1:1方形)</div>
-                  <div className="image-prompt-text" id="socialImagePrompt">
-                    {imagePrompts.social || '解析后显示'}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select value={imageStyles.social} onChange={(e) => handleImageStyleChange('social', e.target.value)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}>
+                      {imageStylePresets.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer', userSelect: 'none' }}>
+                      <input type="checkbox" checked={showWatermarks.social} onChange={() => toggleWatermark('social')} />
+                      水印{showWatermarks.social ? ':' : ''}
+                    </label>
+                    {showWatermarks.social && (
+                      <input type="text" value={imageWatermarks.social} onChange={(e) => handleImageWatermarkChange('social', e.target.value)} placeholder="荣玥老师" style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', width: 100, fontSize: 13 }} />
+                    )}
                   </div>
-                  <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('social')}>
-                    复制提示词
-                  </button>
+                  <div className="image-prompt-text" id="socialImagePrompt">{getStyledImagePrompt('social') || '解析后显示'}</div>
+                  <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="btn btn-sm btn-outline" onClick={() => copyImagePrompt('social')}>复制提示词</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('social', 'https://claude.ai')}>Claude</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('social', 'https://chat.openai.com')}>ChatGPT</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('social', 'https://gemini.google.com/')}>Gemini</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('social', 'https://kimi.moonshot.cn')}>Kimi</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('social', 'https://www.doubao.com/chat/')}>豆包</button>
+                  </div>
+                  <div style={{ marginTop: 12, padding: 12, border: '2px dashed #ddd', borderRadius: 8, background: '#fafafa', textAlign: 'center' }} onPaste={(e) => handleGeneratedImagePaste('social', e)}>
+                    {generatedImages.social ? (
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <img src={generatedImages.social} alt="social" style={{ maxWidth: 200, borderRadius: 6 }} />
+                        {showWatermarks.social && imageWatermarks.social && (
+                          <div style={{
+                            position: 'absolute', bottom: 8, right: 8, color: 'rgba(255,255,255,0.9)',
+                            fontSize: 12, fontWeight: 500, textShadow: '0 1px 2px rgba(0,0,0,0.6)', pointerEvents: 'none'
+                          }}>@{imageWatermarks.social}</div>
+                        )}
+                        <button onClick={() => removeGeneratedImage('social')} style={{ position: 'absolute', top: -8, right: -8, background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ color: '#999', fontSize: 13, marginBottom: 6 }}>点击此区域后 Ctrl+V 粘贴图片，或</div>
+                        <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer' }}>
+                          选择文件
+                          <input type="file" accept="image/*" onChange={(e) => handleGeneratedImageUpload('social', e)} style={{ display: 'none' }} />
+                        </label>
+                      </>
+                    )}
+                  </div>
                 </div>
+
+                {/* Quote Card with Watermark */}
                 <div className="image-prompt-item">
                   <div className="image-prompt-title">金句卡片背景</div>
-                  <div className="image-prompt-text" id="quoteCardImagePrompt">
-                    {imagePrompts.quoteCard || '解析后显示'}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select value={imageStyles.quoteCard} onChange={(e) => handleImageStyleChange('quoteCard', e.target.value)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 13 }}>
+                      {imageStylePresets.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                    </select>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, cursor: 'pointer', userSelect: 'none' }}>
+                      <input type="checkbox" checked={showWatermarks.quoteCard} onChange={() => toggleWatermark('quoteCard')} />
+                      水印{showWatermarks.quoteCard ? ':' : ''}
+                    </label>
+                    {showWatermarks.quoteCard && (
+                      <input type="text" value={imageWatermarks.quoteCard} onChange={(e) => handleImageWatermarkChange('quoteCard', e.target.value)} placeholder="荣玥老师" style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #ddd', width: 100, fontSize: 13 }} />
+                    )}
                   </div>
-                  <button className="btn btn-sm btn-outline" style={{ marginTop: 8 }} onClick={() => copyImagePrompt('quoteCard')}>
-                    复制提示词
-                  </button>
+                  <div className="image-prompt-text" id="quoteCardImagePrompt">{getStyledImagePrompt('quoteCard') || '解析后显示'}</div>
+                  <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <button className="btn btn-sm btn-outline" onClick={() => copyImagePrompt('quoteCard')}>复制提示词</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('quoteCard', 'https://claude.ai')}>Claude</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('quoteCard', 'https://chat.openai.com')}>ChatGPT</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('quoteCard', 'https://gemini.google.com/')}>Gemini</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('quoteCard', 'https://kimi.moonshot.cn')}>Kimi</button>
+                    <button className="ai-btn" onClick={() => copyImagePromptAndJump('quoteCard', 'https://www.doubao.com/chat/')}>豆包</button>
+                  </div>
+                  <div style={{ marginTop: 12, padding: 12, border: '2px dashed #ddd', borderRadius: 8, background: '#fafafa', textAlign: 'center' }} onPaste={(e) => handleGeneratedImagePaste('quoteCard', e)}>
+                    {generatedImages.quoteCard ? (
+                      <div style={{ position: 'relative', display: 'inline-block' }}>
+                        <img src={generatedImages.quoteCard} alt="quoteCard" style={{ maxWidth: 200, borderRadius: 6 }} />
+                        {showWatermarks.quoteCard && imageWatermarks.quoteCard && (
+                          <div style={{
+                            position: 'absolute', bottom: 8, right: 8, color: 'rgba(255,255,255,0.9)',
+                            fontSize: 12, fontWeight: 500, textShadow: '0 1px 2px rgba(0,0,0,0.6)', pointerEvents: 'none'
+                          }}>@{imageWatermarks.quoteCard}</div>
+                        )}
+                        <button onClick={() => removeGeneratedImage('quoteCard')} style={{ position: 'absolute', top: -8, right: -8, background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: '50%', width: 20, height: 20, cursor: 'pointer', fontSize: 12 }}>×</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ color: '#999', fontSize: 13, marginBottom: 6 }}>点击此区域后 Ctrl+V 粘贴图片，或</div>
+                        <label className="btn btn-sm btn-outline" style={{ cursor: 'pointer' }}>
+                          选择文件
+                          <input type="file" accept="image/*" onChange={(e) => handleGeneratedImageUpload('quoteCard', e)} style={{ display: 'none' }} />
+                        </label>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1847,7 +2279,7 @@ ${articleSummary}
             </button>
           </div>
         </div>
-      </div>
+      </div >
 
       <div
         className={`modal-overlay${showImageModal ? ' show' : ''}`}
