@@ -3,58 +3,183 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 const schemes = {
   morandi: {
-    primary: '#9b8b7d',
-    text: '#5a5a5a',
-    textLight: '#777',
-    bgWarm: '#f7f5f3',
-    bgWarmEnd: '#efe9e4',
-    bgCard: '#f7f5f3',
-    border: '#c4b5a5'
+    primary: '#8c7b6c', // Warmer brown
+    text: '#4a4a4a',
+    textLight: '#888',
+    bgWarm: '#fdfcfb', // Lighter, cleaner
+    bgWarmEnd: '#f4f0ec',
+    bgCard: '#ffffff',
+    border: '#dcd3cc',
+    shadow: 'rgba(140, 123, 108, 0.1)'
   },
   green: {
-    primary: '#5d8a66',
-    text: '#3d4a3f',
-    textLight: '#666',
-    bgWarm: '#f4f9f5',
-    bgWarmEnd: '#e8f2ea',
-    bgCard: '#f4f9f5',
-    border: '#7eb085'
+    primary: '#567c64', // Sage green
+    text: '#2c3e32',
+    textLight: '#6e7c74',
+    bgWarm: '#f6f9f7',
+    bgWarmEnd: '#e9f0ec',
+    bgCard: '#ffffff',
+    border: '#c5d6cc',
+    shadow: 'rgba(86, 124, 100, 0.1)'
   },
   purple: {
-    primary: '#8b7eb8',
-    text: '#4a4558',
-    textLight: '#666',
-    bgWarm: '#f8f6fc',
-    bgWarmEnd: '#f0ecf8',
-    bgCard: '#f8f6fc',
-    border: '#a99cd1'
+    primary: '#8076a3', // Lavender/Iris
+    text: '#433e56',
+    textLight: '#7a7687',
+    bgWarm: '#f9f8fc',
+    bgWarmEnd: '#f0eff6',
+    bgCard: '#ffffff',
+    border: '#d3d0e0',
+    shadow: 'rgba(128, 118, 163, 0.1)'
   },
-  milktea: {
-    primary: '#a67c52',
-    text: '#4d4035',
-    textLight: '#6d5d4d',
-    bgWarm: '#faf6f1',
-    bgWarmEnd: '#f5ebe0',
-    bgCard: '#faf6f1',
-    border: '#c9a77c'
+  ocean: {
+    primary: '#3a6ea5', // Ocean Blue
+    text: '#2c3e50',
+    textLight: '#6f8ba4',
+    bgWarm: '#f5f9fc',
+    bgWarmEnd: '#e6f0f7',
+    bgCard: '#ffffff',
+    border: '#cce0f0',
+    shadow: 'rgba(58, 110, 165, 0.1)'
   },
-  blackgold: {
-    primary: '#c9a962',
-    text: '#333',
-    textLight: '#555',
-    bgWarm: '#f9f8f5',
-    bgWarmEnd: '#f3f0e8',
-    bgCard: '#f9f8f5',
-    border: '#c9a962'
+  sunset: {
+    primary: '#e08e79', // Warm Coral/Clay
+    text: '#593e36',
+    textLight: '#997b73',
+    bgWarm: '#fdf8f6',
+    bgWarmEnd: '#f7ebe8',
+    bgCard: '#ffffff',
+    border: '#f0dcd6',
+    shadow: 'rgba(224, 142, 121, 0.1)'
   },
-  coral: {
-    primary: '#e07a5f',
-    text: '#4a4a4a',
-    textLight: '#666',
-    bgWarm: '#fef7f5',
-    bgWarmEnd: '#fceee9',
-    bgCard: '#fef7f5',
-    border: '#f2a07b'
+  minimalist: {
+    primary: '#222222', // Classic Black
+    text: '#333333',
+    textLight: '#888888',
+    bgWarm: '#ffffff',
+    bgWarmEnd: '#f8f8f8',
+    bgCard: '#ffffff',
+    border: '#eeeeee',
+    shadow: 'rgba(0, 0, 0, 0.05)'
+  },
+  cherry: {
+    primary: '#c04851', // Cherry Red
+    text: '#4a181b',
+    textLight: '#946669',
+    bgWarm: '#fdf6f7',
+    bgWarmEnd: '#fae6e8',
+    bgCard: '#ffffff',
+    shadow: 'rgba(192, 72, 81, 0.1)'
+  },
+  cyberpunk: {
+    primary: '#00f2ea', // Cyan
+    text: '#e0e0e0',
+    textLight: '#a0a0a0',
+    bgWarm: '#2b213a', // Dark Purple
+    bgWarmEnd: '#241b35',
+    bgCard: '#1a1a2e',
+    border: '#ff0055', // Neon Pink
+    shadow: 'rgba(0, 242, 234, 0.2)'
+  },
+  candy: {
+    primary: '#ffb7b2', // Pastel Pink
+    text: '#6d6875',
+    textLight: '#b5b2c2',
+    bgWarm: '#fff0f5', // Lavender Blush
+    bgWarmEnd: '#e0f7fa', // Mint Cream
+    bgCard: '#ffffff',
+    border: '#ffdac1', // Peach
+    shadow: 'rgba(255, 183, 178, 0.2)'
+  },
+  vintage: {
+    primary: '#d9534f', // Retro Red
+    text: '#2c3e50',
+    textLight: '#95a5a6',
+    bgWarm: '#f4e1d2', // Antique White
+    bgWarmEnd: '#e8d5c4',
+    bgCard: '#fffcf5',
+    border: '#f39c12', // Mustard
+    shadow: 'rgba(217, 83, 79, 0.1)'
+  },
+  forest: {
+    primary: '#2d6a4f', // Deep Green
+    text: '#1b4332',
+    textLight: '#74c69d',
+    bgWarm: '#f0f7f4', // Minty White
+    bgWarmEnd: '#d8f3dc',
+    bgCard: '#ffffff',
+    border: '#95d5b2',
+    shadow: 'rgba(45, 106, 79, 0.1)'
+  },
+  coffee: {
+    primary: '#8d7a66', // Warm Brown
+    text: '#4a3b32',
+    textLight: '#998a7b',
+    bgWarm: '#fdfcf8', // Creamy White
+    bgWarmEnd: '#f2ebe5',
+    bgCard: '#ffffff',
+    border: '#d6c8bd',
+    shadow: 'rgba(141, 122, 102, 0.1)'
+  },
+  haze: {
+    primary: '#6e7c85', // Blue Grey
+    text: '#2c3e50',
+    textLight: '#8a97a0',
+    bgWarm: '#f6f8fa', // Cool White
+    bgWarmEnd: '#e8edf2',
+    bgCard: '#ffffff',
+    border: '#cbd4db',
+    shadow: 'rgba(110, 124, 133, 0.1)'
+  },
+  olive: {
+    primary: '#7c856e', // Muted Green
+    text: '#3b4232',
+    textLight: '#949e85',
+    bgWarm: '#f8f9f6',
+    bgWarmEnd: '#ebefe6',
+    bgCard: '#ffffff',
+    border: '#ced6c2',
+    shadow: 'rgba(124, 133, 110, 0.1)'
+  },
+  rose: {
+    primary: '#9d6e73', // Dusty Pink
+    text: '#4a3234',
+    textLight: '#bf9599',
+    bgWarm: '#fdf8f9',
+    bgWarmEnd: '#f7ebec',
+    bgCard: '#ffffff',
+    border: '#e6cbd0',
+    shadow: 'rgba(157, 110, 115, 0.1)'
+  },
+  aurora: {
+    primary: '#845ec2', // Purple
+    text: '#4b4453',
+    textLight: '#b0a8b9',
+    bgWarm: '#fdfbfd',
+    bgWarmEnd: '#f3e5f5',
+    bgCard: '#ffffff',
+    border: '#d65db1', // Pink
+    shadow: 'rgba(132, 94, 194, 0.1)'
+  },
+  cream: {
+    primary: '#ff9671', // Peach
+    text: '#594039',
+    textLight: '#ffc75f',
+    bgWarm: '#fffbf0',
+    bgWarmEnd: '#fff5e6',
+    bgCard: '#ffffff',
+    border: '#ff6f91',
+    shadow: 'rgba(255, 150, 113, 0.1)'
+  },
+  midnight: {
+    primary: '#2c3e50', // Deep Blue
+    text: '#1a252f',
+    textLight: '#bdc3c7',
+    bgWarm: '#f4f6f7',
+    bgWarmEnd: '#ecf0f1',
+    bgCard: '#ffffff',
+    border: '#34495e',
+    shadow: 'rgba(44, 62, 80, 0.1)'
   }
 };
 
@@ -667,7 +792,10 @@ function parseBlocksFromText(text) {
       continue;
     }
 
-    if (line.includes('===猫门笔记卡===') || line.trim() === '【猫门笔记卡】') {
+    // Relaxed Check: Matches anything containing "猫门笔记卡" that looks like a header or delimiter
+    // e.g. "===猫门笔记卡===", "**【猫门笔记卡】**", "### 猫门笔记卡"
+    const noteCardHeaderRegex = /(?:={3,}|【|#+\s*|\*\*)\s*猫门笔记卡\s*(?:={3,}|】|\*\*|$)/;
+    if (noteCardHeaderRegex.test(line)) {
       let concept = '';
       let explanation = '';
       let watermark = '- 荣玥老师';
@@ -680,16 +808,19 @@ function parseBlocksFromText(text) {
           continue;
         }
 
-        if (nextLine.startsWith('【概念】')) {
-          concept = nextLine.replace('【概念】', '').trim();
+        // Clean the line for matching keys (remove bold, whitespace)
+        const cleanLine = nextLine.replace(/^[\*\s]+|[\*\s]+$/g, '');
+
+        if (cleanLine.startsWith('【概念】') || cleanLine.startsWith('【概念:')) {
+          concept = nextLine.replace(/[\*]*【概念】[:：]?[\*]*/, '').trim();
           i++;
-        } else if (nextLine.startsWith('【解释】')) {
-          explanation = nextLine.replace('【解释】', '').trim();
+        } else if (cleanLine.startsWith('【解释】') || cleanLine.startsWith('【解释:')) {
+          explanation = nextLine.replace(/[\*]*【解释】[:：]?[\*]*/, '').trim();
           i++;
-        } else if (nextLine.startsWith('【水印】')) {
-          watermark = nextLine.replace('【水印】', '').trim();
+        } else if (cleanLine.startsWith('【水印】') || cleanLine.startsWith('【水印:')) {
+          watermark = nextLine.replace(/[\*]*【水印】[:：]?[\*]*/, '').trim();
           i++;
-        } else if (nextLine.startsWith('===')) {
+        } else if (nextLine.includes('===')) {
           // End of block if it's another delimiter, or just consume it if it's the closing ===
           i++;
           break;
@@ -830,54 +961,82 @@ function buildFullArticleText(blocks) {
 }
 
 function generateBlockHTML(block, schemeKey) {
-  const s = schemes[schemeKey];
+  if (block.hidden) return '';
+
+  const s = schemes[schemeKey] || schemes.morandi;
   const formatInlineText = (text) =>
     (text || '').replace(/\*\*([^*]+)\*\*/g, `<strong style="color:${s.primary};">$1</strong>`);
+
+  // Common Typography
+  const baseText = `font-size:15px;color:${s.text};line-height:1.8;letter-spacing:0.5px;text-align:justify;margin-bottom:24px;`;
+
   switch (block.type) {
     case 'paragraph': {
       const p = formatInlineText(block.content).replace(/\n/g, '<br>');
-      return `<p style="font-size:15px;color:${s.text};line-height:2;margin-bottom:20px;">${p}</p>`;
+      return `<p style="${baseText}">${p}</p>`;
     }
+
     case 'emphasis':
-      return `<p style="font-size:15px;color:${s.text};line-height:2;margin-bottom:20px;"><strong style="color:${s.primary};">${block.content || ''}</strong></p>`;
+      return `<p style="${baseText}"><strong style="color:${s.primary};background:linear-gradient(to bottom, transparent 60%, ${s.shadow} 0);border-radius:4px;padding:0 4px;">${block.content || ''}</strong></p>`;
+
     case 'heading':
-      return `<p style="font-size:17px;color:${s.primary};font-weight:600;margin:28px 0 16px;">${formatInlineText(block.content)}</p>`;
-    case 'divider':
-      return `<p style="text-align:center;color:${s.border};margin:28px 0;letter-spacing:8px;">···</p>`;
-    case 'quote': {
-      const len = (block.content || '').length;
-      if (len <= 40) {
-        return `<div style="position:relative;margin:28px 0;padding:18px 20px;border-radius:18px;background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});"><span style="position:absolute;left:14px;top:-10px;font-size:18px;opacity:.6;">🐾</span><p style="font-size:17px;color:${s.primary};line-height:1.8;margin:0;text-align:center;font-weight:600;">${formatInlineText(block.content)}</p></div>`;
-      }
-      return `<section style="position:relative;background:linear-gradient(135deg,${s.bgWarm},${s.bgWarmEnd});border-left:3px solid ${s.primary};padding:22px 22px 18px;margin:24px 0;border-radius:0 12px 12px 0;"><span style="position:absolute;left:16px;top:-12px;font-size:18px;opacity:.6;">🐾</span><span style="position:absolute;left:18px;top:14px;font-size:18px;color:${s.primary};opacity:.5;">“</span><p style="font-size:15px;color:${s.primary};line-height:1.9;margin:0;font-weight:500;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
+      return `<section style="margin:40px 0 20px;padding-left:12px;border-left:4px solid ${s.primary};"><p style="font-size:18px;color:${s.primary};font-weight:700;line-height:1.4;margin:0;">${formatInlineText(block.content)}</p></section>`;
+
+    case 'divider': {
+      const style = block.styleOption || 'paws'; // Default to paws
+      const icon = style === 'star' ? '✦' : '🐾';
+      return `<div style="text-align:center;margin:40px 0;"><span style="display:inline-block;width:60px;height:1px;background:linear-gradient(to right, transparent, ${s.border}, transparent);"></span><span style="font-size:14px;color:${s.border};margin:0 10px;vertical-align:middle;">${icon}</span><span style="display:inline-block;width:60px;height:1px;background:linear-gradient(to right, transparent, ${s.border}, transparent);"></span></div>`;
     }
+
+    case 'quote': {
+      const style = block.styleOption || 'panda'; // Default to panda
+
+      let badge = '';
+      if (style === 'panda') {
+        badge = `<span style="position:absolute;bottom:-8px;right:-8px;font-size:24px;transform:rotate(-15deg);z-index:2;filter:drop-shadow(2px 2px 0 #fff);">🐼</span>`;
+      } else if (style === 'paws') {
+        badge = `<span style="position:absolute;bottom:-5px;right:-5px;font-size:18px;transform:rotate(-15deg);z-index:2;color:${s.primary};opacity:0.8;display:flex;gap:4px;"><span>🐾</span><span style="font-size:14px;margin-top:8px;">🐾</span></span>`;
+      }
+
+      return `<section style="margin:32px 0;padding:24px;background:${s.bgWarm};border-left:4px solid ${s.primary};position:relative;border-radius:0 12px 12px 0;">${badge}<span style="position:absolute;top:-16px;left:16px;font-size:48px;color:${s.primary};opacity:0.2;font-family:serif;line-height:1;">“</span><p style="font-size:16px;color:${s.primary};line-height:1.8;font-weight:600;margin:0;position:relative;z-index:1;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
+    }
+
     case 'note': {
       if (block.hidden) return '';
       const title = block.title || '🐼 猫门笔记卡';
       const conceptLine = block.concept ? formatInlineText(block.concept) : '';
       const body = formatInlineText(block.content).replace(/\n/g, '<br>');
       const watermark = block.watermark ? formatInlineText(block.watermark) : '';
-      return `<section style="border:2px solid ${s.primary};border-radius:18px;padding:18px 20px;margin:24px 0;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,0.04);position:relative;"><div style="font-size:15px;font-weight:600;color:${s.primary};margin-bottom:6px;">${title}</div>${conceptLine ? `<div style="font-size:14px;color:${s.primary};font-weight:600;margin-bottom:6px;">${conceptLine}</div>` : ''}<div style="font-size:14px;color:${s.text};line-height:1.9;">${body}</div>${watermark ? `<div style="position:absolute;right:16px;bottom:10px;font-size:12px;color:${s.textLight};">${watermark}</div>` : ''}</section>`;
+
+      // Glassmorphism / Card Style
+      return `<section style="margin:32px 0;padding:24px;background:#fff;border-radius:16px;box-shadow:0 8px 24px ${s.shadow};position:relative;overflow:hidden;border:1px solid ${s.bgWarmEnd};"><div style="display:inline-block;background:${s.bgWarmEnd};color:${s.primary};font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:12px;">${title}</div>${conceptLine ? `<h4 style="font-size:16px;color:${s.text};margin:0 0 12px;font-weight:700;">${conceptLine}</h4>` : ''}<div style="font-size:14px;color:${s.textLight};line-height:1.8;">${body}</div>${watermark ? `<div style="text-align:right;margin-top:16px;font-size:12px;color:${s.primary};opacity:0.6;">${watermark}</div>` : ''}<div style="position:absolute;bottom:-10px;right:-10px;font-size:80px;opacity:0.05;transform:rotate(-15deg);pointer-events:none;">🐾</div></section>`;
     }
+
     case 'list': {
       const items = (block.content || '')
         .split('\n')
         .map((item) => item.trim())
         .filter((item) => item)
-        .filter((item) => item.replace(/[*_]+/g, '').trim());
-      return `<section style="background:${s.bgCard};padding:18px 20px;margin:24px 0;border-radius:10px;border:1px solid ${s.border};">${items
+        .map(item => item.replace(/^[-\*·]\s*/, '')); // Clean bullet chars
+
+      return `<ul style="list-style:none;padding:0;margin:24px 0;">${items
         .map(
           (item) =>
-            `<p style="font-size:14px;color:${s.textLight};line-height:2;margin-bottom:8px;padding-left:16px;position:relative;"><span style="position:absolute;left:0;color:${s.primary};">→</span>${formatInlineText(item)}</p>`
+            `<li style="margin-bottom:12px;padding-left:24px;position:relative;font-size:15px;color:${s.text};line-height:1.8;"><span style="position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:${s.primary};"></span>${formatInlineText(item)}</li>`
         )
-        .join('')}</section>`;
+        .join('')}</ul>`;
     }
+
     case 'image':
+      if (block.hidden) return '';
       return block.content
-        ? `<p style="text-align:center;margin:24px 0;"><img src="${block.content}" style="max-width:100%;border-radius:10px;"></p>`
+        ? `<figure style="margin:32px -10px;text-align:center;"><img src="${block.content}" style="width:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.05);"></figure>`
         : '';
+
     case 'imagePlaceholder':
-      return `<p style="text-align:center;margin:24px 0;padding:28px;background:#fafafa;border-radius:10px;color:#999;font-size:13px;border:1px dashed #ddd;">📷 ${block.content || '建议插入图片'}</p>`;
+      if (block.hidden) return '';
+      return `<div style="margin:24px 0;padding:32px;background:${s.bgWarm};border-radius:12px;text-align:center;border:1px dashed ${s.border};"><span style="font-size:24px;display:block;margin-bottom:8px;opacity:0.5;">📷</span><span style="font-size:13px;color:${s.textLight};">${block.content || '建议插入图片'}</span></div>`;
+
     default:
       return '';
   }
@@ -898,6 +1057,7 @@ function readClipboardImage(items, onLoad) {
 }
 
 export default function Home() {
+  const [generateChineseText, setGenerateChineseText] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [currentMode, setCurrentMode] = useState('A');
   const [currentStyleTab, setCurrentStyleTab] = useState('preset');
@@ -930,7 +1090,6 @@ export default function Home() {
   const [imageStyles, setImageStyles] = useState({ cover: 'photo', xhsCover: 'photo', social: 'photo', quoteCard: 'photo' });
   const [imageWatermarks, setImageWatermarks] = useState({ cover: '荣玥老师', xhsCover: '荣玥老师', social: '荣玥老师', quoteCard: '荣玥老师' });
   const [showWatermarks, setShowWatermarks] = useState({ cover: true, xhsCover: true, social: true, quoteCard: true });
-  const [showDiagrams, setShowDiagrams] = useState(true);
   const [generatedImages, setGeneratedImages] = useState({});
 
   const toastTimerRef = useRef(null);
@@ -961,18 +1120,7 @@ export default function Home() {
   const materialWordCount = useMemo(() => userMaterialInput.replace(/\s/g, '').length, [userMaterialInput]);
   const wordCount = useMemo(() => inputText.replace(/\s/g, '').length, [inputText]);
 
-  const previewHtml = useMemo(() => {
-    if (!blocks.length) {
-      return '<div style="text-align:center;color:#999;padding:40px">预览内容</div>';
-    }
-    return blocks
-      .map((b, i) => {
-        if (b.isDiagram && !showDiagrams) return '';
-        const html = generateBlockHTML(b, currentScheme);
-        return `<div data-block-index="${i}" style="margin:0;padding:0;">${html}</div>`;
-      })
-      .join('');
-  }, [blocks, currentScheme, showDiagrams]);
+  // The previewHtml useMemo is removed as per instruction, and rendering is done inline.
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1093,6 +1241,25 @@ export default function Home() {
     const articleText = stripImagePromptText(splitImagePromptSection(normalized).articleText);
     const parsedBlocks = parseBlocksFromText(articleText);
     setBlocks(parsedBlocks);
+  };
+
+  const handlePreviewClick = (e) => {
+    const blockEl = e.target.closest('[data-block-index]');
+    if (blockEl) {
+      const index = parseInt(blockEl.getAttribute('data-block-index'), 10);
+      if (!isNaN(index)) {
+        const editorBlock = document.getElementById(`editor-block-${index}`);
+        if (editorBlock) {
+          editorBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Optional: Add highlight effect
+          editorBlock.style.transition = 'background 0.3s';
+          editorBlock.style.background = '#f0f9ff';
+          setTimeout(() => {
+            editorBlock.style.background = '';
+          }, 1000);
+        }
+      }
+    }
   };
 
   const syncFromFullArticle = () => {
@@ -1390,8 +1557,23 @@ ${articleSummary}
   };
 
   const copyImagePrompt = (type) => {
-    const prompt = imagePrompts[type] || '';
-    copyToClipboard(prompt, '✅ 已复制');
+    // Re-use logic to ensure toggle is respected
+    // Since getStyledImagePrompt handles the toggle, using it even for 'pure' copy is safer if we want styles.
+    // However, if user wants RAW prompt, we should just check the toggle.
+    // Let's stick to the user request: "click agent also copy instructions". Agent jumps use getStyledImagePrompt logic via manual copy?
+    // Wait, copyImagePrompt currently copies raw `imagePrompts[type]`.
+    // The user said: "Clicking the smart agent... will also copy this".
+    // Smart agent jumps calls `copyImagePromptAndJump`, which calls `getStyledImagePrompt`.
+    // So `copyImagePromptAndJump` is covered.
+    // What about just "Copy"?
+    // The user said "In the image and image suggestion, I hope to have such function".
+    // So "Copy" button should also include it.
+
+    let prompt = imagePrompts[type] || '';
+    if (generateChineseText) {
+      prompt += ', text in Simplified Chinese, hanzi, chinese typography, billboard style';
+    }
+    copyToClipboard(prompt, '✅ 提示词已复制');
   };
 
   const getStyledImagePrompt = (type) => {
@@ -1402,7 +1584,13 @@ ${articleSummary}
     if (!stylePreset || styleId === 'photo') return basePrompt;
     // Replace photo keywords with selected style
     const photoKeywords = /cinematic|editorial photo|35mm film|film look|shallow depth of field|photography/gi;
-    return basePrompt.replace(photoKeywords, '').replace(/,\s*,/g, ',').trim() + ', ' + stylePreset.keywords;
+    let final = basePrompt.replace(photoKeywords, '').replace(/,\s*,/g, ',').trim() + ', ' + stylePreset.keywords;
+
+    // Global Chinese Text Toggle
+    if (generateChineseText) {
+      final += ', text in Simplified Chinese, hanzi, chinese typography, billboard style, clear text';
+    }
+    return final;
   };
 
   const copyImagePromptAndJump = (type, url) => {
@@ -1730,21 +1918,6 @@ ${articleSummary}
                 <div className="full-article-header">
                   <div className="full-article-title">📝 完整文章（可直接编辑）</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none', background: '#f5f5f5', padding: '4px 8px', borderRadius: '6px' }}>
-                      <input
-                        type="checkbox"
-                        checked={showDiagrams}
-                        onChange={(e) => setShowDiagrams(e.target.checked)}
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          marginRight: '6px',
-                          accentColor: '#333',
-                          cursor: 'pointer'
-                        }}
-                      />
-                      <span style={{ fontSize: '13px', color: '#333' }}>👁️ 显示图解</span>
-                    </label>
                     <button className="btn btn-sm btn-outline" onClick={syncFromFullArticle}>
                       同步到模块
                     </button>
@@ -1776,6 +1949,7 @@ ${articleSummary}
                       <div
                         className="block-item"
                         key={`${block.type}-${index}`}
+                        id={`editor-block-${index}`}
                         onFocusCapture={() => scrollToPreviewBlock(index)}
                         onClick={() => scrollToPreviewBlock(index)}
                       >
@@ -1791,12 +1965,41 @@ ${articleSummary}
                               </option>
                             ))}
                           </select>
+                          {block.type === 'quote' && (
+                            <select
+                              className="block-style-sel"
+                              value={block.styleOption || 'panda'}
+                              onChange={(e) => {
+                                const newBlocks = [...blocks];
+                                newBlocks[index].styleOption = e.target.value;
+                                setBlocks(newBlocks);
+                              }}
+                              style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #ddd', fontSize: 13 }}
+                            >
+                              <option value="panda">🐼 熊猫</option>
+                              <option value="paws">🐾 爪印</option>
+                              <option value="clean">🚫 极简</option>
+                            </select>
+                          )}
+                          {block.type === 'divider' && (
+                            <select
+                              className="block-style-sel"
+                              value={block.styleOption || 'paws'}
+                              onChange={(e) => {
+                                const newBlocks = [...blocks];
+                                newBlocks[index].styleOption = e.target.value;
+                                setBlocks(newBlocks);
+                              }}
+                              style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #ddd', fontSize: 13 }}
+                            >
+                              <option value="paws">🐾 爪印</option>
+                              <option value="star">✦ 星星</option>
+                            </select>
+                          )}
                           <div className="block-actions">
-                            {block.type === 'note' && (
-                              <button className="block-act-btn" onClick={() => toggleBlockHidden(index)}>
-                                {block.hidden ? '🙈' : '👁'}
-                              </button>
-                            )}
+                            <button className="block-act-btn" onClick={() => toggleBlockHidden(index)} title={block.hidden ? '显示' : '隐藏'}>
+                              {block.hidden ? '🙈' : '👁'}
+                            </button>
                             <button className="block-act-btn" onClick={() => moveBlock(index, -1)}>
                               ↑
                             </button>
@@ -1942,12 +2145,22 @@ ${articleSummary}
                   <span className="color-label">配色：</span>
                   <div className="color-options">
                     {[
-                      { id: 'morandi', bg: 'linear-gradient(135deg,#9b8b7d,#c4b5a5)', title: '莫兰迪' },
-                      { id: 'green', bg: 'linear-gradient(135deg,#5d8a66,#7eb085)', title: '森绿' },
-                      { id: 'purple', bg: 'linear-gradient(135deg,#8b7eb8,#a99cd1)', title: '薰衣草' },
-                      { id: 'milktea', bg: 'linear-gradient(135deg,#a67c52,#c9a77c)', title: '奶茶' },
-                      { id: 'blackgold', bg: 'linear-gradient(135deg,#333,#c9a962)', title: '黑金' },
-                      { id: 'coral', bg: 'linear-gradient(135deg,#e07a5f,#f2a07b)', title: '珊瑚' }
+                      { id: 'morandi', bg: 'linear-gradient(135deg,#8c7b6c,#dcd3cc)', title: '莫兰迪 (经典)' },
+                      { id: 'green', bg: 'linear-gradient(135deg,#567c64,#c5d6cc)', title: '森绿 (治愈)' },
+                      { id: 'purple', bg: 'linear-gradient(135deg,#8076a3,#d3d0e0)', title: '薰衣草 (优雅)' },
+                      { id: 'ocean', bg: 'linear-gradient(135deg,#3a6ea5,#cce0f0)', title: '深海 (商务)' },
+                      { id: 'sunset', bg: 'linear-gradient(135deg,#e08e79,#f0dcd6)', title: '日落 (活力)' },
+                      { id: 'minimalist', bg: 'linear-gradient(135deg,#333,#eee)', title: '极简 (黑白)' },
+                      { id: 'cherry', bg: 'linear-gradient(135deg,#c04851,#f0ced1)', title: '车厘子 (热烈)' },
+                      // Premium Solid
+                      { id: 'coffee', bg: '#8d7a66', title: '拿铁 (质感)' },
+                      { id: 'haze', bg: '#6e7c85', title: '雾霾 (高级)' },
+                      { id: 'olive', bg: '#7c856e', title: '橄榄 (自然)' },
+                      { id: 'rose', bg: '#9d6e73', title: '玫瑰 (温柔)' },
+                      // Premium Gradient
+                      { id: 'aurora', bg: 'linear-gradient(135deg,#845ec2,#d65db1)', title: '极光 (梦幻)' },
+                      { id: 'cream', bg: 'linear-gradient(135deg,#ff9671,#ffc75f)', title: '奶油 (甜美)' },
+                      { id: 'midnight', bg: 'linear-gradient(135deg,#2c3e50,#4ca1af)', title: '午夜 (深邃)' }
                     ].map((opt) => (
                       <button
                         key={opt.id}
@@ -1974,7 +2187,15 @@ ${articleSummary}
                     className="phone-content"
                     id="previewContent"
                     ref={previewRef}
-                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                    onClick={handlePreviewClick}
+                    dangerouslySetInnerHTML={{
+                      __html: blocks
+                        .map((b, i) => {
+                          const html = generateBlockHTML(b, currentScheme);
+                          return `<div data-block-index="${i}" style="margin:0;padding:0;">${html}</div>`;
+                        })
+                        .join('')
+                    }}
                   />
                   <div className="phone-bottom">
                     <button className="btn btn-secondary btn-sm" onClick={copyAllCode}>
@@ -2073,6 +2294,15 @@ ${articleSummary}
             <div className="card image-prompts-card" id="imagePromptsCard">
               <div className="card-header">
                 <div className="card-title">🖼️ 配图提示词</div>
+                <label style={{ display: 'flex', alignItems: 'center', fontSize: 13, cursor: 'pointer', marginLeft: 'auto', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={generateChineseText}
+                    onChange={(e) => setGenerateChineseText(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  生成中文文字 (实验性)
+                </label>
               </div>
               <div className="card-body">
                 {/* Cover Image */}
