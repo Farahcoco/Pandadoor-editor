@@ -49,13 +49,34 @@
 
 ## 在线使用
 
-直接打开 HTML 文件即可使用，无需安装任何依赖。
+### 方式一：Next.js 最新版（推荐，对应 `pages/index.js`）
+
+```bash
+cd /Users/dr.panda/vibe-coding-project/maomen-editor
+npm install   # 首次运行需要
+npm run preview
+```
+
+然后在浏览器打开：**http://localhost:3000**
+
+### 方式二：HTML 静态版（无需安装依赖）
+
+```bash
+cd /Users/dr.panda/vibe-coding-project/maomen-editor
+npm run preview:html
+```
+
+然后在浏览器打开：**http://localhost:8080/猫门智能排版器v9.html**
+
+> 也可以直接双击 `猫门智能排版器v9.html` 打开，但部分功能在 `file://` 协议下可能受限，建议用上面的本地服务器。
 
 ## 文件说明
 
 ```
-├── 猫门智能排版器.html      # Pro 版本
-├── 猫门智能排版器v5.html    # v5 最新版本
+├── pages/index.js              # Next.js 最新版（开发中）
+├── 猫门智能排版器v9.html        # HTML 最新版本
+├── 猫门智能排版器v9-fix.html    # HTML 修复版
+├── index.html                  # 入口，自动跳转到 v9
 └── README.md
 ```
 

@@ -180,6 +180,36 @@ const schemes = {
     bgCard: '#ffffff',
     border: '#34495e',
     shadow: 'rgba(44, 62, 80, 0.1)'
+  },
+  dopamine: {
+    primary: '#ff6b6b', // Coral Red
+    text: '#4a148c', // Deep Purple
+    textLight: '#7c43bd',
+    bgWarm: '#fff59d', // Yellow
+    bgWarmEnd: '#fff9c4',
+    bgCard: '#ffffff',
+    border: '#2979ff', // Bright Blue
+    shadow: 'rgba(41, 121, 255, 0.2)'
+  },
+  retro_clash: {
+    primary: '#009688', // Teal
+    text: '#3e2723', // Dark Brown
+    textLight: '#6d4c41',
+    bgWarm: '#ffccbc', // Peach
+    bgWarmEnd: '#ffab91',
+    bgCard: '#fff3e0',
+    border: '#d81b60', // Pink
+    shadow: 'rgba(216, 27, 96, 0.2)'
+  },
+  pop: {
+    primary: '#000000',
+    text: '#000000',
+    textLight: '#666666',
+    bgWarm: '#fff000', // Bright Yellow
+    bgWarmEnd: '#ffea00',
+    bgCard: '#ffffff',
+    border: '#000000',
+    shadow: 'rgba(0,0,0,0.2)'
   }
 };
 
@@ -774,7 +804,7 @@ function parseBlocksFromText(text) {
     if (!line) continue;
 
     if (line === '---' || line === '***' || line === '___') {
-      result.push({ type: 'divider', content: '' });
+      result.push({ type: 'divider', content: '', styleOption: 'paws' });
       continue;
     }
 
@@ -793,8 +823,9 @@ function parseBlocksFromText(text) {
     }
 
     // Relaxed Check: Matches anything containing "猫门笔记卡" that looks like a header or delimiter
-    // e.g. "===猫门笔记卡===", "**【猫门笔记卡】**", "### 猫门笔记卡"
-    const noteCardHeaderRegex = /(?:={3,}|【|#+\s*|\*\*)\s*猫门笔记卡\s*(?:={3,}|】|\*\*|$)/;
+    // e.g. "===猫门笔记卡===", "**【猫门笔记卡】**", "### 猫门笔记卡", "==猫门笔记卡=="
+    // Also supports fullwidth equals "＝＝＝"
+    const noteCardHeaderRegex = /(?:[=＝]{2,}|【|#+\s*|\*\*)\s*猫门笔记卡\s*(?:[=＝]{2,}|】|\*\*|$)/;
     if (noteCardHeaderRegex.test(line)) {
       let concept = '';
       let explanation = '';
@@ -821,9 +852,13 @@ function parseBlocksFromText(text) {
           watermark = nextLine.replace(/[\*]*【水印】[:：]?[\*]*/, '').trim();
           i++;
         } else if (nextLine.includes('===')) {
-          // End of block if it's another delimiter, or just consume it if it's the closing ===
+          // End of block if it's another delimiter
+          // If it's a new Note Card header, break WITHOUT consuming so main loop sees it
+          if (noteCardHeaderRegex.test(nextLine)) {
+            break;
+          }
+          // Otherwise it's the closing ===, consume it
           i++;
-          break;
           break;
         } else if (nextLine.startsWith('![')) {
           // Image started, break
@@ -917,10 +952,10 @@ function parseBlocksFromText(text) {
     }
 
     if (line.startsWith('- ') || line.startsWith('* ')) {
-      const listItems = [line.slice(2)];
+      const listItems = [line.replace(/^[-*]\s+/, '')];
       while (i + 1 < lines.length && (lines[i + 1].trim().startsWith('- ') || lines[i + 1].trim().startsWith('* '))) {
         i += 1;
-        listItems.push(lines[i].trim().slice(2));
+        listItems.push(lines[i].trim().replace(/^[-*]\s+/, ''));
       }
       result.push({ type: 'list', content: listItems.join('\n') });
       continue;
@@ -933,7 +968,7 @@ function parseBlocksFromText(text) {
 
 function buildFullArticleText(blocks) {
   return blocks
-    .filter((b) => b.type !== 'note')
+    // .filter((b) => b.type !== 'note') // Remove this filter to allow notes to persist
     .map((b) => {
       switch (b.type) {
         case 'heading':
@@ -953,6 +988,14 @@ function buildFullArticleText(blocks) {
           return `![图片](${b.content || ''})`;
         case 'emphasis':
           return `**${b.content || ''}**`;
+        case 'note':
+          return `
+===猫门笔记卡===
+【概念】${b.concept || ''}
+【解释】${b.content || ''}
+【水印】${b.watermark || '- 荣玥老师'}
+===
+`;
         default:
           return b.content || '';
       }
@@ -965,7 +1008,10 @@ function generateBlockHTML(block, schemeKey) {
 
   const s = schemes[schemeKey] || schemes.morandi;
   const formatInlineText = (text) =>
-    (text || '').replace(/\*\*([^*]+)\*\*/g, `<strong style="color:${s.primary};">$1</strong>`);
+    (text || '')
+      .replace(/\(\[.*?\]\[\d+\]\)/g, '') // Remove ([url][1])
+      .replace(/\[\d+\]/g, '') // Remove [1]
+      .replace(/\*\*([^*]+?)\*\*/g, `<strong style="color:${s.primary};">$1</strong>`);
 
   // Common Typography
   const baseText = `font-size:15px;color:${s.text};line-height:1.8;letter-spacing:0.5px;text-align:justify;margin-bottom:24px;`;
@@ -984,21 +1030,32 @@ function generateBlockHTML(block, schemeKey) {
 
     case 'divider': {
       const style = block.styleOption || 'paws'; // Default to paws
+      if (style === 'clean') {
+        return `<div style="text-align:center;margin:40px 0;"><span style="display:inline-block;width:60px;height:1px;background:${s.border};"></span></div>`;
+      }
       const icon = style === 'star' ? '✦' : '🐾';
       return `<div style="text-align:center;margin:40px 0;"><span style="display:inline-block;width:60px;height:1px;background:linear-gradient(to right, transparent, ${s.border}, transparent);"></span><span style="font-size:14px;color:${s.border};margin:0 10px;vertical-align:middle;">${icon}</span><span style="display:inline-block;width:60px;height:1px;background:linear-gradient(to right, transparent, ${s.border}, transparent);"></span></div>`;
     }
 
     case 'quote': {
-      const style = block.styleOption || 'panda'; // Default to panda
+      const style = block.styleOption || 'clean'; // Default to clean
 
-      let badge = '';
-      if (style === 'panda') {
-        badge = `<span style="position:absolute;bottom:-8px;right:-8px;font-size:24px;transform:rotate(-15deg);z-index:2;filter:drop-shadow(2px 2px 0 #fff);">🐼</span>`;
-      } else if (style === 'paws') {
-        badge = `<span style="position:absolute;bottom:-5px;right:-5px;font-size:18px;transform:rotate(-15deg);z-index:2;color:${s.primary};opacity:0.8;display:flex;gap:4px;"><span>🐾</span><span style="font-size:14px;margin-top:8px;">🐾</span></span>`;
-      }
+      // Refined Watermark Logic:
+      // 1. No small badges.
+      // 2. Specific large watermark for each style.
+      let watermarkChar = '';
+      if (style === 'panda') watermarkChar = '🐼';
+      else if (style === 'paws') watermarkChar = '🐾';
 
-      return `<section style="margin:32px 0;padding:24px;background:${s.bgWarm};border-left:4px solid ${s.primary};position:relative;border-radius:0 12px 12px 0;">${badge}<span style="position:absolute;top:-16px;left:16px;font-size:48px;color:${s.primary};opacity:0.2;font-family:serif;line-height:1;">“</span><p style="font-size:16px;color:${s.primary};line-height:1.8;font-weight:600;margin:0;position:relative;z-index:1;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
+      const bgWatermark = watermarkChar
+        ? `<div style="position:absolute;bottom:-10px;right:-5px;font-size:80px;opacity:0.08;transform:rotate(-15deg);pointer-events:none;z-index:0;">${watermarkChar}</div>`
+        : '';
+
+      // Fix for WeChat: Use float instead of absolute positioning for the quote mark
+      // Removed overflow:hidden to allow bottom-right badge to show fully.
+      // 1. Watermark: remove overflow:hidden on section so it's "complete".
+      // 2. Extra line: Set height:0 on the floated quote mark so it doesn't push the clearfix down.
+      return `<section style="margin:32px 0;padding:24px;background:${s.bgWarm};border-left:4px solid ${s.primary};border-radius:0 12px 12px 0;position:relative;">${bgWatermark}<span style="float:left;font-size:48px;color:${s.primary};opacity:0.2;font-family:serif;line-height:1;margin-right:8px;margin-top:-8px;height:0;overflow:visible;">“</span><div style="font-size:16px;color:${s.primary};line-height:1.8;font-weight:600;margin:0;position:relative;z-index:1;">${formatInlineText(block.content.trim()).replace(/\n/g, '<br>')}</div><div style="clear:both;"></div></section>`;
     }
 
     case 'note': {
@@ -1017,7 +1074,7 @@ function generateBlockHTML(block, schemeKey) {
         .split('\n')
         .map((item) => item.trim())
         .filter((item) => item)
-        .map(item => item.replace(/^[-\*·]\s*/, '')); // Clean bullet chars
+        .map(item => item.replace(/^[-\*·\s]+/, '')); // Clean bullet chars more aggressively
 
       return `<ul style="list-style:none;padding:0;margin:24px 0;">${items
         .map(
@@ -1030,7 +1087,7 @@ function generateBlockHTML(block, schemeKey) {
     case 'image':
       if (block.hidden) return '';
       return block.content
-        ? `<figure style="margin:32px -10px;text-align:center;"><img src="${block.content}" style="width:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.05);"></figure>`
+        ? `<figure style="margin:32px 0;text-align:center;"><img src="${block.content}" style="display:block;width:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.05);"></figure>`
         : '';
 
     case 'imagePlaceholder':
@@ -1087,7 +1144,8 @@ export default function Home() {
   const [editingImageIndex, setEditingImageIndex] = useState(null);
 
   // Image prompt style and watermark state
-  const [imageStyles, setImageStyles] = useState({ cover: 'photo', xhsCover: 'photo', social: 'photo', quoteCard: 'photo' });
+  // Default to illustration as per user request (randomized or fixed to non-photo)
+  const [imageStyles, setImageStyles] = useState({ cover: 'illustration', xhsCover: 'illustration', social: 'illustration', quoteCard: 'illustration' });
   const [imageWatermarks, setImageWatermarks] = useState({ cover: '荣玥老师', xhsCover: '荣玥老师', social: '荣玥老师', quoteCard: '荣玥老师' });
   const [showWatermarks, setShowWatermarks] = useState({ cover: true, xhsCover: true, social: true, quoteCard: true });
   const [generatedImages, setGeneratedImages] = useState({});
@@ -1331,7 +1389,7 @@ export default function Home() {
       ]);
       return;
     }
-    setBlocks((prev) => [...prev, { type, content: '', imgPrompt: '' }]);
+    setBlocks((prev) => [...prev, { type, content: '', imgPrompt: '', styleOption: 'clean' }]);
   };
 
   const toggleBlockHidden = (index) => {
@@ -1496,7 +1554,7 @@ ${articleSummary}
 要求：60-90字；像朋友私聊；带一点“为什么想到你”
 
 【文章标题备选】
-要求：8个不同风格（悬念/数字/痛点/好奇/共鸣等）；都要克制但有钩子
+要求：8个爆款标题；风格强烈；必须有点击欲（10w+风格）；包含：悬念/反差/数字/痛点/情绪宣泄/利益承诺；都带钩子
 
 【目标人群画像】
 要求：3-5类；每类1-2句，明确“处境 + 需求/痛点”
@@ -1968,7 +2026,7 @@ ${articleSummary}
                           {block.type === 'quote' && (
                             <select
                               className="block-style-sel"
-                              value={block.styleOption || 'panda'}
+                              value={block.styleOption || 'clean'}
                               onChange={(e) => {
                                 const newBlocks = [...blocks];
                                 newBlocks[index].styleOption = e.target.value;
@@ -1984,7 +2042,7 @@ ${articleSummary}
                           {block.type === 'divider' && (
                             <select
                               className="block-style-sel"
-                              value={block.styleOption || 'paws'}
+                              value={block.styleOption || 'clean'}
                               onChange={(e) => {
                                 const newBlocks = [...blocks];
                                 newBlocks[index].styleOption = e.target.value;
@@ -1993,6 +2051,7 @@ ${articleSummary}
                               style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #ddd', fontSize: 13 }}
                             >
                               <option value="paws">🐾 爪印</option>
+                              <option value="clean">🚫 极简</option>
                               <option value="star">✦ 星星</option>
                             </select>
                           )}
@@ -2160,7 +2219,11 @@ ${articleSummary}
                       // Premium Gradient
                       { id: 'aurora', bg: 'linear-gradient(135deg,#845ec2,#d65db1)', title: '极光 (梦幻)' },
                       { id: 'cream', bg: 'linear-gradient(135deg,#ff9671,#ffc75f)', title: '奶油 (甜美)' },
-                      { id: 'midnight', bg: 'linear-gradient(135deg,#2c3e50,#4ca1af)', title: '午夜 (深邃)' }
+                      { id: 'midnight', bg: 'linear-gradient(135deg,#2c3e50,#4ca1af)', title: '午夜 (深邃)' },
+                      // Combo / Dopamine
+                      { id: 'dopamine', bg: 'linear-gradient(135deg,#ff6b6b,#2979ff)', title: '多巴胺 (撞色)' },
+                      { id: 'retro_clash', bg: 'linear-gradient(135deg,#009688,#d81b60)', title: '复古 (碰撞)' },
+                      { id: 'pop', bg: 'linear-gradient(135deg,#fff000,#000000)', title: '波普 (高反差)' }
                     ].map((opt) => (
                       <button
                         key={opt.id}
