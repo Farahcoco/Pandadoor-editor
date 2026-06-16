@@ -190,6 +190,7 @@ const blockTypeOptions = [
   { id: 'quote', name: '金句' },
   { id: 'heading', name: '小标题' },
   { id: 'note', name: '猫门笔记卡' },
+  { id: 'summary', name: '猫哥小纸条' },
   { id: 'list', name: '列表' },
   { id: 'divider', name: '分割线' },
   { id: 'image', name: '图片' },
@@ -341,6 +342,16 @@ const lightStyleSpec = `## 自然度（请注意，但别因此拘谨）
 - 不要写「本文 / 这篇文章 / 综上 / 读完你会发现」
 - 其余正常写、正常排版：该加粗的关键词照常用 \`**词**\` 加粗，金句、小标题、列表都照常`;
 
+const summaryOutputSpec = `## 猫哥小纸条（文章结尾输出）
+- 在文章**最后**，用「猫哥」的口吻给读者写一张走心的小纸条，像朋友在耳边叮嘱
+- **以「猫哥想对你说，」开头**，第一人称、温暖、有力量；3-5 句或 2-4 个要点
+- 目标：让读者愿意截图保存
+- 使用以下固定格式输出：
+
+===猫哥小纸条===
+猫哥想对你说，（这里写走心的内容，可用要点）
+【水印】— 荣玥老师`;
+
 function getLengthLabels(currentLength) {
   const lenReq =
     currentLength === 'auto'
@@ -427,10 +438,12 @@ ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
 
+${summaryOutputSpec}
+
 ${lightStyleSpec}
 
 ---
-请直接输出完整内容（文章 + 配图提示词），不要解释。`;
+请直接输出完整内容（文章 + 猫哥小纸条 + 配图提示词），不要解释。`;
   }
 
   // Fix for other modes if they have same issue
@@ -486,10 +499,12 @@ ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
 
+${summaryOutputSpec}
+
 ${lightStyleSpec}
 
 ---
-请直接输出完整内容（文章 + 配图提示词），不要解释。`;
+请直接输出完整内容（文章 + 猫哥小纸条 + 配图提示词），不要解释。`;
   }
 
   if (currentMode === 'C') {
@@ -539,10 +554,12 @@ ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
 
+${summaryOutputSpec}
+
 ${lightStyleSpec}
 
 ---
-请直接输出完整内容（文章 + 配图提示词），不要解释。`;
+请直接输出完整内容（文章 + 猫哥小纸条 + 配图提示词），不要解释。`;
   }
 
   return `你是一位资深内容创作者，请帮我把多个素材整合成一篇原创文章。
@@ -594,10 +611,12 @@ ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
 
+${summaryOutputSpec}
+
 ${lightStyleSpec}
 
 ---
-请直接输出完整内容（文章 + 配图提示词），不要解释。`;
+请直接输出完整内容（文章 + 猫哥小纸条 + 配图提示词），不要解释。`;
 }
 
 function generateImagePromptFromDesc(desc) {
@@ -727,6 +746,25 @@ function parseNoteCard(section) {
 function splitImagePromptSection(text) {
   const { text: cleaned, section } = extractSection(text, '配图提示词');
   return { articleText: cleaned, imagePrompts: parseImagePrompts(section) };
+}
+
+// 猫哥小纸条：作为"区块"整段抽出来（在 parseBlocksFromText 之前），避免和笔记卡的 === 消费逻辑打架
+function parseSummary(section) {
+  if (!section) return null;
+  let watermark = '— 荣玥老师';
+  let content = section.trim();
+  const wm = content.match(/【(?:水印|署名|落款)】\s*([^\n]+)/);
+  if (wm) {
+    watermark = wm[1].trim();
+    content = content.replace(/【(?:水印|署名|落款)】[^\n]*/g, '').trim();
+  }
+  if (!content) return null;
+  return { type: 'summary', title: '🐼 猫哥小纸条', content, watermark, imgPrompt: '', hidden: false };
+}
+
+function splitSummarySection(text) {
+  const { text: cleaned, section } = extractSection(text, '(?:猫哥小纸条|猫哥小结|猫门小结)');
+  return { articleText: cleaned, summary: parseSummary(section) };
 }
 
 function stripImagePromptText(text) {
@@ -955,11 +993,14 @@ function parseBlocksFromText(text) {
 
 function buildFullArticleText(blocks) {
   return blocks
-    .filter((b) => b.type !== 'note')
     .map((b) => {
       switch (b.type) {
         case 'title':
           return `# ${b.content || ''}`;
+        case 'note':
+          return `\n===猫门笔记卡===\n【概念】${b.concept || ''}\n【解释】${b.content || ''}\n【水印】${b.watermark || '- 荣玥老师'}\n===\n`;
+        case 'summary':
+          return `\n===猫哥小纸条===\n${b.content || ''}\n【水印】${b.watermark || '— 荣玥老师'}\n===\n`;
         case 'heading':
           return `## ${b.content || ''}`;
         case 'quote':
@@ -1037,6 +1078,16 @@ function generateBlockHTML(block, schemeKey) {
 
       // Glassmorphism / Card Style
       return `<section style="margin:32px 0;padding:24px;background:#fff;border-radius:16px;box-shadow:0 8px 24px ${s.shadow};position:relative;overflow:hidden;border:1px solid ${s.bgWarmEnd};"><div style="display:inline-block;background:${s.bgWarmEnd};color:${s.primary};font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:12px;">${title}</div>${conceptLine ? `<h4 style="font-size:16px;color:${s.text};margin:0 0 12px;font-weight:700;">${conceptLine}</h4>` : ''}<div style="font-size:14px;color:${s.textLight};line-height:1.8;">${body}</div>${watermark ? `<div style="text-align:right;margin-top:16px;font-size:12px;color:${s.primary};opacity:0.6;">${watermark}</div>` : ''}<div style="position:absolute;bottom:-10px;right:-10px;font-size:80px;opacity:0.05;transform:rotate(-15deg);pointer-events:none;">🐾</div></section>`;
+    }
+
+    case 'summary': {
+      if (block.hidden) return '';
+      const title = block.title || '🐼 猫哥小纸条';
+      // 行首 * / - / • 转成 • 项目符号（避免显示原始星号）
+      const body = formatInlineText((block.content || '').replace(/^\s*[*\-•]\s+/gm, '• ')).replace(/\n/g, '<br>');
+      const watermark = block.watermark ? formatInlineText(block.watermark) : '— 荣玥老师';
+      // 结尾走心卡片：暖色底 + 实色徽标，区别于白色笔记卡；水印与笔记卡一致(80px/0.05)
+      return `<section style="margin:40px 0 24px;padding:24px;background:${s.bgWarm};border:1px solid ${s.bgWarmEnd};border-radius:16px;position:relative;overflow:hidden;"><div style="display:inline-block;background:${s.primary};color:#fff;font-size:13px;font-weight:700;padding:5px 14px;border-radius:20px;margin-bottom:14px;">${title}</div><div style="font-size:15px;color:${s.text};line-height:1.9;">${body}</div><div style="text-align:right;margin-top:18px;font-size:12px;color:${s.primary};opacity:0.7;position:relative;z-index:1;">${watermark}</div><div style="position:absolute;bottom:-10px;right:-10px;font-size:80px;opacity:0.05;transform:rotate(-15deg);pointer-events:none;">🐾</div></section>`;
     }
 
     case 'list': {
@@ -1251,8 +1302,10 @@ export default function Home() {
     // Remove manual extraction of note cards to allow natural inline parsing
     // The parseBlocksFromText function already handles ===猫门笔记卡=== blocks inline
     const { articleText, imagePrompts: extractedPrompts } = splitImagePromptSection(text);
-    const cleanedArticle = stripImagePromptText(articleText);
-    const parsedBlocks = parseBlocksFromText(cleanedArticle);
+    const { articleText: noSummary, summary } = splitSummarySection(articleText);
+    const cleanedArticle = stripImagePromptText(noSummary);
+    let parsedBlocks = parseBlocksFromText(cleanedArticle);
+    if (summary) parsedBlocks = [...parsedBlocks, summary];
 
     setBlocks(parsedBlocks);
     setImagePrompts(extractedPrompts);
@@ -1265,8 +1318,10 @@ export default function Home() {
   const parseContentSilent = (text) => {
     const normalized = normalizeText(text);
     // Remove manual note extraction here too
-    const articleText = stripImagePromptText(splitImagePromptSection(normalized).articleText);
-    const parsedBlocks = parseBlocksFromText(articleText);
+    const { articleText: noSummary, summary } = splitSummarySection(splitImagePromptSection(normalized).articleText);
+    const articleText = stripImagePromptText(noSummary);
+    let parsedBlocks = parseBlocksFromText(articleText);
+    if (summary) parsedBlocks = [...parsedBlocks, summary];
     setBlocks(parsedBlocks);
   };
 
@@ -1388,6 +1443,13 @@ export default function Home() {
       setBlocks((prev) => [
         ...prev,
         { type, title: '🐼 猫门笔记卡', concept: '', content: '', watermark: '- 荣玥老师', hidden: false }
+      ]);
+      return;
+    }
+    if (type === 'summary') {
+      setBlocks((prev) => [
+        ...prev,
+        { type, title: '🐼 猫哥小纸条', content: '猫哥想对你说，', watermark: '— 荣玥老师', imgPrompt: '', hidden: false }
       ]);
       return;
     }
@@ -1758,13 +1820,13 @@ ${articleSummary}
       <Head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>猫门智能排版器 v9-fix</title>
+        <title>猫门智能排版器 v11</title>
       </Head>
 
       <div className="container">
         <div className="header">
           <h1>🐱 猫门智能排版器</h1>
-          <p>v9-fix · 让公众号排版优雅高效</p>
+          <p>v11 · 让公众号排版优雅高效</p>
         </div>
 
         <div className="steps-bar">
@@ -2201,6 +2263,9 @@ ${articleSummary}
                   </button>
                   <button className="add-block-btn" onClick={() => addBlock('note')}>
                     + 笔记卡
+                  </button>
+                  <button className="add-block-btn" onClick={() => addBlock('summary')}>
+                    + 猫哥小纸条
                   </button>
                   <button className="add-block-btn" onClick={() => addBlock('divider')}>
                     + 分割线
