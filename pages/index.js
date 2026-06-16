@@ -333,6 +333,13 @@ const noteCardOutputSpec = `## 猫门笔记卡（仅当文章包含心理学概�
 【解释】一句话解释
 【水印】- 荣玥老师`;
 
+// 轻度降 AI 味：只删最明显的套话，绝不限制正常写作/排版/加粗（这点和被废弃的 V10"写作禁区"相反）
+const lightStyleSpec = `## 自然度（请注意，但别因此拘谨）
+- 避免「不是…而是…」「不仅…而且…」「与其…不如…」这类对偶/转折套路句
+- 少用空洞营销词与 AI 腔：爆款 / 赋能 / 底层逻辑 / 认知 / 在这个…的时代 / 真正的X是… / 你有没有发现
+- 不要写「本文 / 这篇文章 / 综上 / 读完你会发现」
+- 其余正常写、正常排版：该加粗的关键词照常用 \`**词**\` 加粗，金句、小标题、列表都照常`;
+
 function getLengthLabels(currentLength) {
   const lenReq =
     currentLength === 'auto'
@@ -372,7 +379,7 @@ function generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal
    - **注意**：不要在金句前加「金句：」等标签，直接写内容
    - 好金句的标准：有洞察、反常识、能引发共鸣、让人想截图分享
    - 金句可长可短，关键是要有力量，不要为了短而丢失意义
-   - 示例：> 我们焦虑的不是未来，而是对未来的想象。
+   - 示例：> 真正拖垮你的，往往是那件你一直没敢开始的小事。
 
 2. **标记强调**
    - 用 \`**文字**\` 标记关键概念、重要术语
@@ -418,6 +425,8 @@ function generatePromptText({ currentMode, styleDesc, lenReq, lenLimit, lenFinal
 ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
+
+${lightStyleSpec}
 
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
@@ -476,6 +485,8 @@ ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
 
+${lightStyleSpec}
+
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
   }
@@ -526,6 +537,8 @@ ${styleDesc}
 ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
+
+${lightStyleSpec}
 
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
@@ -579,6 +592,8 @@ ${styleDesc}
 ${imagePromptOutputSpec}
 
 ${noteCardOutputSpec}
+
+${lightStyleSpec}
 
 ---
 请直接输出完整内容（文章 + 配图提示词），不要解释。`;
