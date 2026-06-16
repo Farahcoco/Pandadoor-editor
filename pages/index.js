@@ -1350,6 +1350,39 @@ export default function Home() {
     setBlocks((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // 把卡片渲染成图片（与预览同一套渲染），插到它下方。解决"公众号粘 HTML 水印必掉"的问题。
+  const convertBlockToImage = async (index) => {
+    const block = blocks[index];
+    if (!block) return;
+    showToast('🖼 正在生成图片…');
+    let wrap;
+    try {
+      const html2canvas = (await import('html2canvas')).default;
+      wrap = document.createElement('div');
+      wrap.style.cssText =
+        "position:fixed;left:-99999px;top:0;width:375px;padding:16px;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB',sans-serif;";
+      wrap.innerHTML = generateBlockHTML(block, currentScheme);
+      document.body.appendChild(wrap);
+      const canvas = await html2canvas(wrap, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      setBlocks((prev) => {
+        const next = [...prev];
+        next.splice(index + 1, 0, { type: 'image', content: dataUrl, hidden: false });
+        return next;
+      });
+      showToast('✅ 已生成图片版并插入到下方（可隐藏上方文字卡片，或自己截图）');
+    } catch (e) {
+      showToast('⚠️ 图片生成失败，请重试');
+    } finally {
+      if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    }
+  };
+
   const addBlock = (type) => {
     if (type === 'note') {
       setBlocks((prev) => [
@@ -2040,6 +2073,15 @@ ${articleSummary}
                             >
                               🖼
                             </button>
+                            {['note', 'quote', 'summary'].includes(block.type) && (
+                              <button
+                                className="block-act-btn to-img"
+                                title="转成图片（在下方生成图片版，公众号像素级还原，可自己截图）"
+                                onClick={() => convertBlockToImage(index)}
+                              >
+                                📸
+                              </button>
+                            )}
                             <button className="block-act-btn del" onClick={() => deleteBlock(index)}>
                               ×
                             </button>

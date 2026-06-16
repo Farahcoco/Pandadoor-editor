@@ -71,6 +71,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .block-act-btn.del:hover{background:#e74c3c}
 .block-act-btn.img{background:#e8f4e8;color:#5d8a66}
 .block-act-btn.img:hover{background:#5d8a66;color:#fff}
+.block-act-btn.to-img{background:#f0ebe4;color:#9b8b7d}
+.block-act-btn.to-img:hover{background:#9b8b7d;color:#fff}
 .block-body{padding:12px 14px}
 .block-input{width:100%;padding:10px;border:1px solid #e8e0d8;border-radius:8px;font-size:13px;line-height:1.6;resize:vertical;min-height:60px;font-family:inherit}
 .block-input:focus{outline:none;border-color:#9b8b7d}
