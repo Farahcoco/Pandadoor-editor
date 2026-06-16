@@ -184,10 +184,11 @@ const schemes = {
 };
 
 const blockTypeOptions = [
+  { id: 'title', name: '大标题' },
   { id: 'paragraph', name: '段落' },
   { id: 'emphasis', name: '强调' },
   { id: 'quote', name: '金句' },
-  { id: 'heading', name: '标题' },
+  { id: 'heading', name: '小标题' },
   { id: 'note', name: '猫门笔记卡' },
   { id: 'list', name: '列表' },
   { id: 'divider', name: '分割线' },
@@ -793,6 +794,12 @@ function parseBlocksFromText(text) {
       continue;
     }
 
+    // 单个 # = 文章大标题（题目）；## 起才是小标题（不影响一月版原有逻辑）
+    if (/^#\s+/.test(line)) {
+      result.push({ type: 'title', content: line.replace(/^#\s+/, '') });
+      continue;
+    }
+
     if (/^#{2,4}\s+/.test(line)) {
       result.push({ type: 'heading', content: line.replace(/^#{2,4}\s+/, '') });
       continue;
@@ -951,6 +958,8 @@ function buildFullArticleText(blocks) {
     .filter((b) => b.type !== 'note')
     .map((b) => {
       switch (b.type) {
+        case 'title':
+          return `# ${b.content || ''}`;
         case 'heading':
           return `## ${b.content || ''}`;
         case 'quote':
@@ -986,6 +995,9 @@ function generateBlockHTML(block, schemeKey) {
   const baseText = `font-size:15px;color:${s.text};line-height:1.8;letter-spacing:0.5px;text-align:justify;margin-bottom:24px;`;
 
   switch (block.type) {
+    case 'title':
+      return `<p style="font-size:23px;color:${s.text};font-weight:800;line-height:1.45;margin:8px 0 28px;padding:0 0 16px;text-align:left;letter-spacing:0.5px;border-bottom:2px solid ${s.bgWarmEnd};">${formatInlineText(block.content)}</p>`;
+
     case 'paragraph': {
       const p = formatInlineText(block.content).replace(/\n/g, '<br>');
       return `<p style="${baseText}">${p}</p>`;
@@ -2133,6 +2145,9 @@ ${articleSummary}
                 </div>
 
                 <div className="add-blocks">
+                  <button className="add-block-btn" onClick={() => addBlock('title')}>
+                    + 大标题
+                  </button>
                   <button className="add-block-btn" onClick={() => addBlock('paragraph')}>
                     + 段落
                   </button>
@@ -2140,7 +2155,7 @@ ${articleSummary}
                     + 金句
                   </button>
                   <button className="add-block-btn" onClick={() => addBlock('heading')}>
-                    + 标题
+                    + 小标题
                   </button>
                   <button className="add-block-btn" onClick={() => addBlock('note')}>
                     + 笔记卡
