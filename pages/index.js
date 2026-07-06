@@ -250,6 +250,22 @@ const blockTypeOptions = [
   { id: 'followBottom', name: '关注引导(尾)' }
 ];
 
+// 关注引导文案预设：公众号常见套路调研版——头部（蓝字关注/星标/人设问候/陪伴计数），
+// 尾部（真诚三连/品牌slogan/评论互动/人设+下期）。都可再编辑。
+const followTopPresets = [
+  { id: 'blue', label: '🔵 蓝字关注+星标', text: '点击上方「蓝字」关注熊猫谈心\n⭐ 顺手设个星标，好文不走丢' },
+  { id: 'hello', label: '👋 人设问候', text: '你好呀，我是猫哥 🐼\n一个陪你用心理学好好生活的人' },
+  { id: 'slogan', label: '✨ 品牌slogan', text: '熊猫谈心 · 用心理学好好生活\n⭐ 星标我们，每周不见不散' },
+  { id: 'count', label: '📅 陪伴计数', text: '这是熊猫谈心陪你的第 100 篇文章\n（数字自己改哦）' }
+];
+
+const followBottomPresets = [
+  { id: 'sanlian', label: '❤️ 真诚三连', text: '看到这里，谢谢你 🐾\n如果有一点点被戳到\n点个「赞」和「在看」\n它会带这篇文章去到更多需要的人那里' },
+  { id: 'slogan', label: '✨ 品牌slogan', text: '关注熊猫谈心\n和猫哥一起，用心理学好好生活 🐼' },
+  { id: 'talk', label: '💬 评论互动', text: '今天聊的这些，你有想说的吗？\n评论区等你，猫哥每条都会看 👇' },
+  { id: 'intro', label: '🐼 人设+陪伴', text: '我是猫哥，一个把心理学讲成人话的人\n关注熊猫谈心\n下一篇继续陪你' }
+];
+
 const styleDescriptions = {
   catgate:
     '专业有深度但不晦涩，像一位值得信赖的朋友在分享见解。有心理学专业底蕴，善于用日常例子解释复杂概念，让读者既有收获感又觉得亲切。金句有洞察力，能让人「原来如此」。',
@@ -354,25 +370,25 @@ const summaryNoteStyles = [
     id: 'handnote_panda',
     label: '📝 手绘笔记·熊猫（默认）',
     keywords:
-      'hand-drawn study notes poster, cream notebook paper texture background, fineliner pen handwriting layout, cute chubby panda mascot doodles scattered around, soft warm highlighter strokes in peach and butter yellow, washi tape corners, hand-drawn small icons before each list item, one highlighted quote box near the bottom, cozy encouraging mood, flat 2D illustration, high resolution'
+      'hand-drawn study notes poster, cream notebook paper texture background, fineliner pen handwriting layout, cute chubby GIANT PANDA (black and white bear) mascot doodles scattered around, soft warm highlighter strokes in peach and butter yellow, washi tape corners, hand-drawn small icons before each list item, one highlighted quote box near the bottom, cozy encouraging mood, flat 2D illustration, high resolution'
   },
   {
     id: 'flat_panda',
     label: '🎨 扁平插画·熊猫',
     keywords:
-      'flat vector illustration note card, soft pastel palette, cute minimal panda character, clean layout with title area and list area, rounded shapes, modern warm graphic style'
+      'flat vector illustration note card, soft pastel palette, cute minimal GIANT PANDA (black and white bear) character, clean layout with title area and list area, rounded shapes, modern warm graphic style'
   },
   {
     id: 'watercolor_panda',
     label: '🎐 水彩·熊猫',
     keywords:
-      'gentle watercolor note poster, soft color washes, cute small panda vignettes, handwritten style layout, dreamy warm tones, paper texture'
+      'gentle watercolor note poster, soft color washes, cute small GIANT PANDA (black and white bear) vignettes, handwritten style layout, dreamy warm tones, paper texture'
   },
   {
     id: 'whiteboard_panda',
     label: '◻️ 极简白板·熊猫',
     keywords:
-      'minimal whiteboard sketchnote, thin black marker lines, generous white space, one small panda doodle accent, clean hand lettering areas'
+      'minimal whiteboard sketchnote, thin black marker lines, generous white space, one small GIANT PANDA (black and white bear) doodle accent, clean hand lettering areas'
   }
 ];
 
@@ -383,7 +399,7 @@ function buildSummaryNotePrompt(block, styleId, layout = 'column') {
   // column：带栏目名版（默认）——顶部是栏目名"猫哥小纸条"，下面才是"猫哥想对你说"
   const structure =
     layout === 'column'
-      ? `1. 顶部栏目名：猫哥小纸条（做成手绘风格的栏目标签/牌匾感，旁边配一只小熊猫）
+      ? `1. 顶部栏目名：猫哥小纸条（做成手绘风格的栏目标签/牌匾感，旁边配一只软萌的大熊猫）
 2. 副标题：猫哥想对你说
 3. 中部要点区：把下面的内容组织成 3-5 条要点，每条前配一个手绘小图标
 4. 底部金句区：从内容中挑出最戳人的一句，放进一个高亮的手绘框里
@@ -405,7 +421,7 @@ ${style.keywords}
 
 【硬性要求】
 - 画面里所有中文文字清晰可读、无错字
-- 熊猫元素贯穿画面但不喧宾夺主
+- 大熊猫元素贯穿画面但不喧宾夺主（必须是黑白配色的大熊猫 giant panda，不是棕色的小浣熊/red panda）
 - 整体温暖、治愈、让人想截图保存`;
 }
 
@@ -582,8 +598,8 @@ const imagePromptOutputSpec = `## 输出要求（必须全部完成）
 - **禁止出现这些词**：blank space, empty area, copy space, text placeholder, empty frame, board, template——它们会让AI画出大片空白，图就废了
 - 每张图都是能独立欣赏的完整插画/画面，铺满整个画幅
 - **每条提示词末尾必须原样追加这段统一风格基底**（与正文配图同款质感，保证全套视觉统一）：
-  warm flat illustration, soft pastel palette of cream peach and sage, rounded shapes, subtle paper grain texture, balanced editorial composition, cozy healing mood, high quality
-- 可以自然融入一只小熊猫作为品牌元素（不强制）
+  warm flat illustration, soft pastel palette of cream peach and sage, rounded shapes, subtle paper grain texture, balanced editorial composition, cozy healing mood, high quality, no text, no watermark, no empty frame
+- 可以自然融入一只软萌的大熊猫作为品牌元素（不强制）。**必须写 giant panda（黑白大熊猫），绝不能只写 panda 或写 red panda**——很多模型会画成小浣熊
 - 配图类型按内容选：概念关系图/思维导图/对比图/流程图/隐喻象征图/场景氛围图，不要全用场景图
 - 提示词包含：主体/构图/色彩/风格/情绪。全英文，不解释`;
 
@@ -1446,8 +1462,28 @@ function generateBlockHTML(block, schemeKey, density = 'normal') {
     case 'emphasis':
       return `<p style="${baseText}"><strong style="color:${s.primary};background:linear-gradient(to bottom, transparent 60%, ${s.shadow} 0);border-radius:4px;padding:0 4px;">${block.content || ''}</strong></p>`;
 
-    case 'heading':
-      return `<section style="margin:${d.h}px 0 16px;padding-left:12px;border-left:4px solid ${s.primary};"><p style="font-size:18px;color:${s.primary};font-weight:700;line-height:1.4;margin:0;">${formatInlineText(block.content)}</p></section>`;
+    case 'heading': {
+      const hstyle = block.styleOption || 'bar';
+      const htext = formatInlineText(block.content);
+      // 多种小标题风格（全部公众号白名单写法），默认竖线；金句卡撞款时可换胶囊/下划线等
+      if (hstyle === 'pill') {
+        return `<section style="margin:${d.h}px 0 16px;font-size:0;"><span style="display:inline-block;background:${s.primary};color:#fff;font-size:16px;font-weight:700;padding:6px 18px;border-radius:24px;line-height:1.5;">${htext}</span></section>`;
+      }
+      if (hstyle === 'underline') {
+        return `<section style="margin:${d.h}px 0 16px;font-size:0;"><span style="display:inline-block;font-size:18px;color:${s.text};font-weight:700;line-height:1.5;padding-bottom:8px;border-bottom:3px solid ${s.primary};">${htext}</span></section>`;
+      }
+      if (hstyle === 'center') {
+        const cline = `<span style="display:inline-block;width:28px;height:0;border-top:1px solid ${s.border};vertical-align:middle;font-size:0;line-height:0;">&nbsp;</span>`;
+        return `<section style="margin:${d.h}px 0 16px;text-align:center;font-size:0;">${cline}<span style="display:inline-block;font-size:18px;color:${s.text};font-weight:700;line-height:1.5;margin:0 14px;vertical-align:middle;">${htext}</span>${cline}</section>`;
+      }
+      if (hstyle === 'tag') {
+        return `<section style="margin:${d.h}px 0 16px;background:${s.bgWarmEnd};border-radius:8px;padding:10px 14px;font-size:0;"><span style="display:inline-block;width:8px;height:8px;background:${s.primary};border-radius:2px;margin-right:10px;vertical-align:middle;font-size:0;line-height:0;">&nbsp;</span><span style="display:inline-block;font-size:17px;color:${s.text};font-weight:700;line-height:1.5;vertical-align:middle;">${htext}</span></section>`;
+      }
+      if (hstyle === 'paw') {
+        return `<section style="margin:${d.h}px 0 16px;font-size:0;"><span style="display:inline-block;font-size:16px;margin-right:8px;vertical-align:middle;">🐾</span><span style="display:inline-block;font-size:18px;color:${s.primary};font-weight:700;line-height:1.5;vertical-align:middle;">${htext}</span></section>`;
+      }
+      return `<section style="margin:${d.h}px 0 16px;padding-left:12px;border-left:4px solid ${s.primary};"><p style="font-size:18px;color:${s.primary};font-weight:700;line-height:1.4;margin:0;">${htext}</p></section>`;
+    }
 
     case 'divider': {
       const style = block.styleOption || 'paws'; // Default to paws
@@ -1557,16 +1593,19 @@ function generateBlockHTML(block, schemeKey, density = 'normal') {
 
     case 'followBottom': {
       // 文末关注/点赞/在看引导卡；需要二维码时在下方加一个图片块粘贴即可
+      // 行距节奏：首行加粗稍大，其余行统一大小统一间距，居中且限制行宽避免奇怪的折行
       const botLines = (block.content || '')
         .split('\n')
-        .filter((l) => l.trim())
+        .map((l) => l.trim())
+        .filter((l) => l)
         .map(
           (l, idx) =>
-            `<p style="font-size:${idx === 0 ? 14 : 13}px;color:${idx === 0 ? s.text : s.textLight};font-weight:${idx === 0 ? 600 : 400};margin:${idx === 0 ? '0' : '8px 0 0'};line-height:1.7;text-align:center;">${formatInlineText(l)}</p>`
+            `<p style="font-size:${idx === 0 ? 15 : 13}px;color:${idx === 0 ? s.text : s.textLight};font-weight:${idx === 0 ? 700 : 400};margin:${idx === 0 ? '0 auto' : '9px auto 0'};line-height:1.8;text-align:center;max-width:16em;letter-spacing:0.5px;">${formatInlineText(l)}</p>`
         )
         .join('');
+      const topDots = `<p style="text-align:center;font-size:12px;color:${s.border};letter-spacing:6px;margin:0 0 14px;">· · ·</p>`;
       const bottomPaw = `<section style="height:0;line-height:0;margin:0;padding:0;text-align:right;font-size:0;"><span style="display:inline-block;font-size:56px;line-height:56px;opacity:0.06;transform:rotate(-12deg);margin-top:-50px;">🐾</span></section>`;
-      return `<section style="margin:${d.h}px 0 ${d.card}px;padding:24px 20px;background:${s.bgWarm};border:1px solid ${s.bgWarmEnd};border-radius:16px;text-align:center;">${botLines}${bottomPaw}</section>`;
+      return `<section style="margin:${d.h}px 0 ${d.card}px;padding:26px 24px;background:${s.bgWarm};border:1px solid ${s.bgWarmEnd};border-radius:16px;text-align:center;">${topDots}${botLines}${bottomPaw}</section>`;
     }
 
     default:
@@ -2205,17 +2244,14 @@ export default function Home() {
       // 插到大标题后面（没有大标题就插最前）
       setBlocks((prev) => {
         const idx = prev.findIndex((b) => b.type === 'title');
-        const blk = { type, content: '点击上方蓝字，关注「猫门」\n⭐ 设为星标，不错过猫哥的每一篇' };
+        const blk = { type, content: followTopPresets[0].text };
         if (idx >= 0) return [...prev.slice(0, idx + 1), blk, ...prev.slice(idx + 1)];
         return [blk, ...prev];
       });
       return;
     }
     if (type === 'followBottom') {
-      setBlocks((prev) => [
-        ...prev,
-        { type, content: '如果这篇对你有一点用，点个「赞」和「在看」🐾\n关注猫门，把心理学变成生活里用得上的东西' }
-      ]);
+      setBlocks((prev) => [...prev, { type, content: followBottomPresets[0].text }]);
       return;
     }
     setBlocks((prev) => [...prev, { type, content: '', imgPrompt: '' }]);
@@ -2482,7 +2518,7 @@ ${articleSummary}
 3. 微博配图：（1:1，与文章主题呼应的完整画面，情绪或隐喻表达，能独立看懂）
 4. 小红书封面：（3:4竖版，完整饱满的画面，主体突出、色彩讨喜、有点击欲）
 硬规则：每张都是**铺满画幅的完整画面**，禁止写"留白/空白区域/放文字的位置/白板/卡片框"这类描述——那会生成大片空白的废图。1和2必须是两张完全不同的图。每条包含画面主体/构图/色调/风格，具体到能直接出图。
-除了1和2保持实拍感，3和4每条末尾都要追加统一风格基底：暖色扁平插画风、奶油色蜜桃色鼠尾草绿的柔和配色、圆润造型、纸纹质感、构图饱满讲究、治愈氛围、高质量——和正文配图一个质感。
+除了1和2保持实拍感，3和4每条末尾都要追加统一风格基底：暖色扁平插画风、奶油色蜜桃色鼠尾草绿的柔和配色、圆润造型、纸纹质感、构图饱满讲究、治愈氛围、高质量、画面中不出现文字和水印——和正文配图一个质感。若画面含熊猫，必须写明"黑白配色的大熊猫"，防止AI画成棕色小浣熊。
 
 【SEO关键词】
 10-15个搜索关键词，含长尾词，用、分隔。
@@ -2813,13 +2849,13 @@ ${articleSummary}
       <Head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>猫门智能排版器 v18</title>
+        <title>猫门智能排版器 v19</title>
       </Head>
 
       <div className="container">
         <div className="header">
           <h1>🐱 猫门智能排版器</h1>
-          <p>v18 · 公众号一键复制 + 小红书图集</p>
+          <p>v19 · 公众号一键复制 + 小红书图集</p>
         </div>
 
         <div className="steps-bar">
@@ -3115,6 +3151,47 @@ ${articleSummary}
                               <option value="leaf">🍃 叶子</option>
                               <option value="dots">··· 圆点</option>
                               <option value="line">— 细线</option>
+                            </select>
+                          )}
+                          {(block.type === 'followTop' || block.type === 'followBottom') && (
+                            <select
+                              className="block-style-sel"
+                              value=""
+                              onChange={(e) => {
+                                const presets = block.type === 'followTop' ? followTopPresets : followBottomPresets;
+                                const preset = presets.find((p) => p.id === e.target.value);
+                                if (preset) updateBlockContent(index, preset.text);
+                              }}
+                              style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #ddd', fontSize: 13 }}
+                              title="选一版文案模板填入，填入后可继续编辑"
+                            >
+                              <option value="" disabled>
+                                📋 换一版文案…
+                              </option>
+                              {(block.type === 'followTop' ? followTopPresets : followBottomPresets).map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.label}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                          {block.type === 'heading' && (
+                            <select
+                              className="block-style-sel"
+                              value={block.styleOption || 'bar'}
+                              onChange={(e) => {
+                                const newBlocks = [...blocks];
+                                newBlocks[index].styleOption = e.target.value;
+                                setBlocks(newBlocks);
+                              }}
+                              style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4, border: '1px solid #ddd', fontSize: 13 }}
+                            >
+                              <option value="bar">▎竖线（默认）</option>
+                              <option value="pill">💊 胶囊底色</option>
+                              <option value="underline">＿ 粗下划线</option>
+                              <option value="center">➖ 居中短线</option>
+                              <option value="tag">🔖 浅底色块</option>
+                              <option value="paw">🐾 爪印开头</option>
                             </select>
                           )}
                           {block.type === 'summary' && (
