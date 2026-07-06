@@ -335,12 +335,24 @@ const noteCardOutputSpec = `## 猫门笔记卡（仅当文章包含心理学概�
 【解释】一句话解释
 【水印】- 荣玥老师`;
 
-// 轻度降 AI 味：只删最明显的套话，绝不限制正常写作/排版/加粗（这点和被废弃的 V10"写作禁区"相反）
-const lightStyleSpec = `## 自然度（请注意，但别因此拘谨）
-- 避免「不是…而是…」「不仅…而且…」「与其…不如…」这类对偶/转折套路句
-- 少用空洞营销词与 AI 腔：爆款 / 赋能 / 底层逻辑 / 认知 / 在这个…的时代 / 真正的X是… / 你有没有发现
-- 不要写「本文 / 这篇文章 / 综上 / 读完你会发现」
-- 其余正常写、正常排版：该加粗的关键词照常用 \`**词**\` 加粗，金句、小标题、列表都照常`;
+// 真人味 + 爆款风格：写作质量的核心规范（所有模式共用）。只管"怎么说话"，不限制排版/加粗。
+const lightStyleSpec = `## 写作风格（最高优先级，违反任何一条都要重写该段）
+
+### 一、像真人说话，不像 AI
+- **句式黑名单（一律禁止）**：「不是…而是…」「不仅…而且…」「与其…不如…」「你有没有发现」「说白了」「换句话说」「值得注意的是」「更重要的是」「从某种意义上说」「让我们…」「首先…其次…最后」三段式
+- **词汇黑名单**：赋能 / 底层逻辑 / 认知升级 / 抓手 / 闭环 / 破局 / 深度解析 / 干货满满 / 情绪价值 / 在这个…的时代 / 真正的X是… / 本文 / 综上 / 读完你会发现
+- 禁止三连排比（「它是…，它是…，它更是…」），禁止每段结尾都来一句总结升华
+- 长短句交替，短句可以只有三五个字。允许偶尔的口头语和不完整句，就像跟朋友聊天时那样
+- 有立场：敢说"我觉得""我试过""我劝你别"。不要四平八稳、两边都对
+- 写具体的人、具体的事、具体的数字。"凌晨一点半改完第七版方案"永远好过"深夜加班到很晚"
+
+### 二、爆款三要素（公众号/小红书通用）
+1. **钩子**：开头 1-2 句必须制造"不读会亏"的感觉——反常识结论、具体冲突、或直接戳中读者正在经历的痛。禁止用背景铺垫开头
+2. **共鸣**：每 300-400 字要有一处让读者"这说的就是我"的具体场景，用画面和细节戳，不用抽象道理讲
+3. **可带走的价值**：读者合上文章能记住并马上用的东西——一个方法、一份清单、一句能转给朋友的话。没有这个，文章不算完成
+
+### 三、自查（输出前默默过一遍）
+把写好的文章通读一遍：任何一句如果"一眼就像 AI 写的"，删掉重写。标准是——这句话你愿不愿意原样发在自己朋友圈`;
 
 const summaryOutputSpec = `## 猫哥小纸条（文章结尾输出）
 - 在文章**最后**，用「猫哥」的口吻给读者写一张走心的小纸条，像朋友在耳边叮嘱
@@ -1063,10 +1075,12 @@ function generateBlockHTML(block, schemeKey) {
       if (style === 'panda') {
         badge = `<span style="position:absolute;bottom:-8px;right:-8px;font-size:24px;transform:rotate(-15deg);z-index:2;filter:drop-shadow(2px 2px 0 #fff);">🐼</span>`;
       } else if (style === 'paws') {
-        badge = `<span style="position:absolute;bottom:-5px;right:-5px;font-size:18px;transform:rotate(-15deg);z-index:2;color:${s.primary};opacity:0.8;display:flex;gap:4px;"><span>🐾</span><span style="font-size:14px;margin-top:8px;">🐾</span></span>`;
+        // 单个大号淡爪印水印（与笔记卡一致），替代原来的多个碎爪印
+        badge = `<span style="position:absolute;bottom:4px;right:8px;font-size:72px;line-height:1;opacity:0.07;transform:rotate(-12deg);pointer-events:none;z-index:0;">🐾</span>`;
       }
 
-      return `<section style="margin:32px 0;padding:24px;background:${s.bgWarm};border-left:4px solid ${s.primary};position:relative;border-radius:0 12px 12px 0;">${badge}<span style="position:absolute;top:-16px;left:16px;font-size:48px;color:${s.primary};opacity:0.2;font-family:serif;line-height:1;">“</span><p style="font-size:16px;color:${s.primary};line-height:1.8;font-weight:600;margin:0;position:relative;z-index:1;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
+      const quoteOverflow = style === 'paws' ? 'overflow:hidden;' : '';
+      return `<section style="margin:32px 0;padding:24px;background:${s.bgWarm};border-left:4px solid ${s.primary};position:relative;border-radius:0 12px 12px 0;${quoteOverflow}">${badge}<span style="position:absolute;top:-16px;left:16px;font-size:48px;color:${s.primary};opacity:0.2;font-family:serif;line-height:1;">“</span><p style="font-size:16px;color:${s.primary};line-height:1.8;font-weight:600;margin:0;position:relative;z-index:1;">${formatInlineText(block.content).replace(/\n/g, '<br>')}</p></section>`;
     }
 
     case 'note': {
@@ -1076,8 +1090,12 @@ function generateBlockHTML(block, schemeKey) {
       const body = formatInlineText(block.content).replace(/\n/g, '<br>');
       const watermark = block.watermark ? formatInlineText(block.watermark) : '';
 
-      // Glassmorphism / Card Style
-      return `<section style="margin:32px 0;padding:24px;background:#fff;border-radius:16px;box-shadow:0 8px 24px ${s.shadow};position:relative;overflow:hidden;border:1px solid ${s.bgWarmEnd};"><div style="display:inline-block;background:${s.bgWarmEnd};color:${s.primary};font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:12px;">${title}</div>${conceptLine ? `<h4 style="font-size:16px;color:${s.text};margin:0 0 12px;font-weight:700;">${conceptLine}</h4>` : ''}<div style="font-size:14px;color:${s.textLight};line-height:1.8;">${body}</div>${watermark ? `<div style="text-align:right;margin-top:16px;font-size:12px;color:${s.primary};opacity:0.6;">${watermark}</div>` : ''}<div style="position:absolute;bottom:-10px;right:-10px;font-size:80px;opacity:0.05;transform:rotate(-15deg);pointer-events:none;">🐾</div></section>`;
+      const footer = watermark
+        ? `<div style="text-align:right;margin-top:12px;font-size:12px;color:${s.primary};opacity:0.65;position:relative;z-index:1;line-height:1.4;">${watermark}</div>`
+        : '';
+      const pawWatermark = `<div style="position:absolute;bottom:4px;right:8px;font-size:96px;line-height:1;opacity:0.07;transform:rotate(-12deg);pointer-events:none;z-index:0;">🐾</div>`;
+
+      return `<section style="margin:32px 0;padding:24px 24px 20px;background:#fff;border-radius:16px;box-shadow:0 8px 24px ${s.shadow};position:relative;overflow:visible;border:1px solid ${s.bgWarmEnd};"><div style="display:inline-block;background:${s.bgWarmEnd};color:${s.primary};font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:12px;">${title}</div>${conceptLine ? `<h4 style="font-size:16px;color:${s.text};margin:0 0 12px;font-weight:700;">${conceptLine}</h4>` : ''}<div style="font-size:14px;color:${s.textLight};line-height:1.8;">${body}</div>${footer}${pawWatermark}</section>`;
     }
 
     case 'summary': {
@@ -1120,17 +1138,58 @@ function generateBlockHTML(block, schemeKey) {
   }
 }
 
+// 图片压缩：过宽的缩到 1280px 并重编码为 JPEG。公众号正文宽约 578px，1280 已是 2 倍清晰度。
+// 大截图从几 MB 降到一两百 KB，预览渲染、复制、导出都会明显变快。
+function compressImageDataUrl(dataUrl, onDone, maxWidth = 1280, quality = 0.85) {
+  try {
+    // GIF 保留动图，非图片或已经很小的直接放行
+    if (!dataUrl || !dataUrl.startsWith('data:image/') || dataUrl.startsWith('data:image/gif')) {
+      onDone(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxWidth / (img.width || maxWidth));
+        if (scale === 1 && dataUrl.length < 300 * 1024) {
+          onDone(dataUrl);
+          return;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff'; // JPEG 无透明通道，先铺白底
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const out = canvas.toDataURL('image/jpeg', quality);
+        onDone(out.length < dataUrl.length ? out : dataUrl);
+      } catch (e) {
+        onDone(dataUrl);
+      }
+    };
+    img.onerror = () => onDone(dataUrl);
+    img.src = dataUrl;
+  } catch (e) {
+    onDone(dataUrl);
+  }
+}
+
+function readFileAsCompressedDataUrl(file, onLoad) {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    if (event.target?.result) compressImageDataUrl(event.target.result, onLoad);
+  };
+  reader.readAsDataURL(file);
+}
+
 function readClipboardImage(items, onLoad) {
   if (!items) return false;
   const imageItem = Array.from(items).find((item) => item.type && item.type.startsWith('image/'));
   if (!imageItem) return false;
   const file = imageItem.getAsFile();
   if (!file) return false;
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    if (event.target?.result) onLoad(event.target.result);
-  };
-  reader.readAsDataURL(file);
+  readFileAsCompressedDataUrl(file, onLoad);
   return true;
 }
 
@@ -1198,7 +1257,6 @@ export default function Home() {
   const materialWordCount = useMemo(() => userMaterialInput.replace(/\s/g, '').length, [userMaterialInput]);
   const wordCount = useMemo(() => inputText.replace(/\s/g, '').length, [inputText]);
 
-  // The previewHtml useMemo is removed as per instruction, and rendering is done inline.
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -1490,11 +1548,7 @@ export default function Home() {
   const handleImageUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImageUrlInput(ev.target?.result || '');
-    };
-    reader.readAsDataURL(file);
+    readFileAsCompressedDataUrl(file, (dataUrl) => setImageUrlInput(dataUrl || ''));
   };
 
   const handleImagePaste = (event) => {
@@ -1592,7 +1646,8 @@ export default function Home() {
 2. 句子要短、自然、有呼吸感；避免模板腔
 3. 禁用营销套话与空洞形容（如“爆款/引爆/震撼/干货/一文讲透/让你…”）
 4. 不要写“本文/这篇文章/我们/以上/读完你就…”
-5. 情绪可以有，但要克制、真实，不夸张
+5. 句式黑名单：「不是…而是…」「不仅…而且…」「与其…不如…」「你有没有发现」「说白了」「更重要的是」，禁止三连排比
+6. 情绪可以有，但要克制、真实，不夸张。自查标准：这条内容你愿不愿意原样发在自己朋友圈
 
 ## 文章内容
 ${articleSummary}
@@ -1745,12 +1800,10 @@ ${articleSummary}
       if (items[i].type.startsWith('image/')) {
         const file = items[i].getAsFile();
         if (!file) continue;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          setGeneratedImages((prev) => ({ ...prev, [type]: ev.target.result }));
+        readFileAsCompressedDataUrl(file, (dataUrl) => {
+          setGeneratedImages((prev) => ({ ...prev, [type]: dataUrl }));
           showToast('✅ 图片已粘贴');
-        };
-        reader.readAsDataURL(file);
+        });
         e.preventDefault();
         return;
       }
@@ -1760,12 +1813,10 @@ ${articleSummary}
   const handleGeneratedImageUpload = (type, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setGeneratedImages((prev) => ({ ...prev, [type]: ev.target.result }));
+    readFileAsCompressedDataUrl(file, (dataUrl) => {
+      setGeneratedImages((prev) => ({ ...prev, [type]: dataUrl }));
       showToast('✅ 图片已上传');
-    };
-    reader.readAsDataURL(file);
+    });
   };
 
   const removeGeneratedImage = (type) => {
@@ -1776,6 +1827,18 @@ ${articleSummary}
     });
     showToast('已删除图片');
   };
+
+  // 预览 HTML 只在 blocks / 配色变化时重建，避免每次输入都全量重渲染（提速关键）
+  const previewHtml = useMemo(
+    () =>
+      blocks
+        .map((b, i) => {
+          const html = generateBlockHTML(b, currentScheme);
+          return `<div data-block-index="${i}" style="margin:0;padding:0;">${html}</div>`;
+        })
+        .join(''),
+    [blocks, currentScheme]
+  );
 
   const generateFullCode = () =>
     blocks
@@ -1789,7 +1852,142 @@ ${articleSummary}
       showToast('⚠️ 无内容');
       return;
     }
-    copyToClipboard(code, '✅ 代码已复制');
+    copyToClipboard(code, '✅ HTML源码已复制');
+  };
+
+  // ===== 一键复制到公众号 =====
+  // 原理与壹伴/135编辑器相同：样式内联(本项目生成的HTML本来就是内联的) + 标签/属性清洗 +
+  // 把公众号会丢弃的 position:absolute 装饰转成流内写法 + 以 text/html 写入剪贴板。
+  const buildWechatHtml = () => {
+    const code = generateFullCode();
+    if (!code) return '';
+    const doc = new DOMParser().parseFromString(`<div id="__mm_root">${code}</div>`, 'text/html');
+    const root = doc.getElementById('__mm_root');
+
+    // 1) 移除公众号不支持的标签
+    root.querySelectorAll('script,iframe,link,meta,form,input,button,video,audio,style').forEach((el) => el.remove());
+
+    // 2) 列表圆点：绝对定位的小圆点在公众号里会丢，转成行内圆点
+    root.querySelectorAll('li').forEach((li) => {
+      const dot = Array.from(li.children).find((c) => {
+        const st = c.getAttribute('style') || '';
+        return /position\s*:\s*absolute/.test(st) && /border-radius\s*:\s*50%/.test(st) && !c.textContent.trim();
+      });
+      if (dot) {
+        dot.setAttribute(
+          'style',
+          `display:inline-block;width:6px;height:6px;border-radius:50%;background:${(dot.getAttribute('style').match(/background\s*:\s*([^;]+)/) || [, '#8c7b6c'])[1]};margin-right:10px;vertical-align:middle;`
+        );
+        li.setAttribute('style', (li.getAttribute('style') || '').replace(/padding-left\s*:\s*[^;]+;?/, '').replace(/position\s*:\s*relative;?/, ''));
+        li.insertBefore(dot, li.firstChild);
+      }
+    });
+
+    // 3) 其余绝对定位装饰（爪印水印/熊猫/引号）：转成零高度流内元素，公众号不会丢
+    root.querySelectorAll('*').forEach((el) => {
+      const st = el.getAttribute('style') || '';
+      if (!/position\s*:\s*absolute/.test(st)) return;
+      const parent = el.parentElement;
+      if (!parent) return;
+      const isBottom = /bottom\s*:/.test(st);
+      const alignRight = /right\s*:/.test(st);
+      const fontSize = parseFloat((st.match(/font-size\s*:\s*([\d.]+)px/) || [])[1] || '16');
+      const opacity = (st.match(/opacity\s*:\s*([\d.]+)/) || [])[1];
+      const rotate = (st.match(/rotate\(\s*(-?[\d.]+)deg\s*\)/) || [])[1];
+      const color = (st.match(/(?:^|;)\s*color\s*:\s*([^;]+)/) || [])[1];
+      const wrap = doc.createElement('section');
+      wrap.setAttribute('style', `height:0;line-height:0;margin:0;padding:0;text-align:${alignRight ? 'right' : 'left'};overflow:visible;`);
+      const span = doc.createElement('span');
+      const pull = isBottom ? Math.round(fontSize * 0.8) : Math.max(0, Math.round(fontSize * 0.3));
+      span.setAttribute(
+        'style',
+        [
+          'display:inline-block',
+          `font-size:${fontSize}px`,
+          'line-height:1',
+          opacity ? `opacity:${opacity}` : '',
+          color ? `color:${color}` : '',
+          `margin-top:-${pull}px`,
+          rotate ? `transform:rotate(${rotate}deg)` : ''
+        ]
+          .filter(Boolean)
+          .join(';')
+      );
+      span.innerHTML = el.innerHTML;
+      wrap.appendChild(span);
+      if (isBottom) parent.appendChild(wrap);
+      else parent.insertBefore(wrap, parent.firstChild);
+      el.remove();
+    });
+
+    // 4) 属性清洗：只保留公众号认可的属性
+    const KEEP = ['style', 'src', 'alt', 'width', 'height'];
+    root.querySelectorAll('*').forEach((el) => {
+      Array.from(el.attributes).forEach((attr) => {
+        if (!KEEP.includes(attr.name.toLowerCase())) el.removeAttribute(attr.name);
+      });
+      // position:fixed / z-index 清掉，避免编辑器整段丢弃
+      const st = el.getAttribute('style');
+      if (st) {
+        el.setAttribute(
+          'style',
+          st
+            .replace(/position\s*:\s*fixed;?/g, '')
+            .replace(/z-index\s*:\s*[^;]+;?/g, '')
+            .replace(/pointer-events\s*:\s*[^;]+;?/g, '')
+        );
+      }
+    });
+
+    // 5) 外层统一包一个 section（公众号编辑器的标准容器）
+    return `<section style="font-size:15px;line-height:1.8;letter-spacing:0.5px;">${root.innerHTML}</section>`;
+  };
+
+  const fallbackCopyRichText = (html) => {
+    const holder = document.createElement('div');
+    holder.setAttribute('contenteditable', 'true');
+    holder.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+    holder.innerHTML = html;
+    document.body.appendChild(holder);
+    const range = document.createRange();
+    range.selectNodeContents(holder);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const ok = document.execCommand('copy');
+    sel.removeAllRanges();
+    document.body.removeChild(holder);
+    return ok;
+  };
+
+  const copyForWechat = async () => {
+    const html = buildWechatHtml();
+    if (!html) {
+      showToast('⚠️ 无内容');
+      return;
+    }
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const plain = tmp.textContent || '';
+    try {
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/html': new Blob([html], { type: 'text/html' }),
+            'text/plain': new Blob([plain], { type: 'text/plain' })
+          })
+        ]);
+      } else if (!fallbackCopyRichText(html)) {
+        throw new Error('fallback failed');
+      }
+      showToast('✅ 已复制，去公众号编辑器直接 Ctrl/Cmd+V 粘贴');
+    } catch (e) {
+      if (fallbackCopyRichText(html)) {
+        showToast('✅ 已复制，去公众号编辑器直接 Ctrl/Cmd+V 粘贴');
+      } else {
+        showToast('⚠️ 复制失败，请重试或用「复制HTML」');
+      }
+    }
   };
 
   const exportAll = () => {
@@ -1820,13 +2018,13 @@ ${articleSummary}
       <Head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>猫门智能排版器 v11</title>
+        <title>猫门智能排版器 v12</title>
       </Head>
 
       <div className="container">
         <div className="header">
           <h1>🐱 猫门智能排版器</h1>
-          <p>v11 · 让公众号排版优雅高效</p>
+          <p>v12 · 一键复制，直接贴进公众号</p>
         </div>
 
         <div className="steps-bar">
@@ -2325,20 +2523,16 @@ ${articleSummary}
                     id="previewContent"
                     ref={previewRef}
                     onClick={handlePreviewClick}
-                    dangerouslySetInnerHTML={{
-                      __html: blocks
-                        .map((b, i) => {
-                          const html = generateBlockHTML(b, currentScheme);
-                          return `<div data-block-index="${i}" style="margin:0;padding:0;">${html}</div>`;
-                        })
-                        .join('')
-                    }}
+                    dangerouslySetInnerHTML={{ __html: previewHtml }}
                   />
                   <div className="phone-bottom">
-                    <button className="btn btn-secondary btn-sm" onClick={copyAllCode}>
-                      复制代码
+                    <button className="btn btn-primary btn-sm" onClick={copyForWechat} title="带格式复制，直接粘贴进公众号编辑器">
+                      📋 一键复制公众号
                     </button>
-                    <button className="btn btn-primary btn-sm" onClick={() => goToStep(4)}>
+                    <button className="btn btn-secondary btn-sm" onClick={copyAllCode} title="复制HTML源码（配合135/壹伴等第三方编辑器使用）">
+                      复制HTML
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => goToStep(4)}>
                       营销物料
                     </button>
                   </div>
