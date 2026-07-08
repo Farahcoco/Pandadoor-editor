@@ -5,3 +5,6 @@ out
 .DS_Store
 .idea/
 .vercel/
+
+.claude/
+backups/
